@@ -1,0 +1,17 @@
+[
+ {
+  "path": "/packages/peripherals/u8g2", 
+  "ver": "c-latest", 
+  "name": "U8G2"
+ }, 
+ {
+  "path": "/packages/peripherals/LedBlink", 
+  "ver": "latest", 
+  "name": "LEDBLINK"
+ }, 
+ {
+  "path": "/packages/peripherals/agile_button", 
+  "ver": "latest", 
+  "name": "AGILE_BUTTON"
+ }
+]
