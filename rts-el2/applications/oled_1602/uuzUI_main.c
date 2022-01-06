@@ -133,13 +133,13 @@ void show_ch_init(void)
 void show_ch_disp(void)
 {
     /*为了解决屏幕黑屏现象，重启屏幕操作*/
-    static int resetCnt = 0;
-
-    if(resetCnt++ >= 5)
-    {
-        oled_reset();
-        resetCnt = 0;
-    }
+//    static int resetCnt = 0;
+//
+//    if(resetCnt++ >= 5)
+//    {
+//        oled_reset();
+//        resetCnt = 0;
+//    }
 
     show_ch_init();
     if (xUI.cID != uuzUI_SHOW_CH) {
