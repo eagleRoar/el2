@@ -1,28 +1,28 @@
 ﻿/* Includes ------------------------------------------------------------------*/
-#include <rtthread.h>
 #include "string.h"
+#include <rtthread.h>
+#include <uuzUI.h>
 /* ------------------------- package ----------------------------------------*/
-#include "drv_flash.h"
 #include "agile_button.h"
+#include "drv_flash.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzINIT.h"
 #include "typedefDEF.h"
 #include "uuzBTN.h"
+#include "uuzINIT.h"
 #include "uuzLED.h"
 #include "uuzRTC.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzTEMP.h"
 #include "uuzDAC.h"
+#include "uuzLIGHT.h"
+#include "uuzTEMP.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
-#include "uuzOLED_1602.h"
-#include "uuzUI_1602.h"
 #include "uuzConfig1602.h"
-#include "uuzUI_Cache.h"
 #include "uuzConfigLIGHT.h"
 #include "uuzLIGHT.h"
-#include "typedefLIGHT.h"
+#include "uuzOLED_1602.h"
+#include "uuzUI_1602.h"
+#include "uuzUI_Cache.h"
 /* -------------------------------------------------------------------------------*/
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "MAIN"
@@ -39,7 +39,7 @@ void logo_init(void)
         xCursor.foucs = 0;
         xCursor.h = 1;
         xCursor.w = 0;
-        xCursor.cmd[0] = _UINT_TAB;    //>
+        xCursor.cmd[0] = _UINT_TAB;  //>
         xInit._logo = 1;
     }
 }
@@ -60,9 +60,9 @@ void logo_disp(void)
         //填充数据
         //型号标签
         if (xSysConfig.Sys[_D_DEVICE_TYPE] == 0x00) {
-            drawString(_DATA_, 0, 0, "GAVITA -- EL1");
+            drawString(_DATA_, 0, 0, "LIGHT CONTROLLER");
         } else if (xSysConfig.Sys[_D_DEVICE_TYPE] == 0x01) {
-            drawString(_DATA_, 0, 0, "GAVITA -- EL2");
+            drawString(_DATA_, 0, 0, "LIGHT CONTROLLER");
         }
         //硬件版本号
         rt_sprintf(cmd, "@2020 V%d.%02d", (xSysConfig.Sys[_D_HW_VERSION] / 100), (xSysConfig.Sys[_D_HW_VERSION] % 100));
@@ -75,8 +75,7 @@ void logo_disp(void)
 
 void logo_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_enter:
             case _key_back:
             show_ch_disp();
@@ -104,28 +103,28 @@ void show_ch_init(void)
         xCh1.foucs = 0;
         xCh1.h = 0;
         xCh1.w = 0;
-        xCh1.cmd[0] = '%';    //W
+        xCh1.cmd[0] = '%';  //W
 
         xCh2.val = 0xFFU;
         xCh2.blink = 0;
         xCh2.foucs = 0;
         xCh2.h = 1;
         xCh2.w = 0;
-        xCh2.cmd[0] = '%';    //W
+        xCh2.cmd[0] = '%';  //W
 
         xTa1.val = 0xFFU;
         xTa1.blink = 0;
         xTa1.foucs = 0;
         xTa1.h = 0;
         xTa1.w = 6;
-        xTa1.cmd[0] = 'C';    //C
+        xTa1.cmd[0] = 'C';  //C
 
         xTa2.val = 0xFFU;
         xTa2.blink = 0;
         xTa2.foucs = 0;
         xTa2.h = 1;
         xTa2.w = 6;
-        xTa2.cmd[0] = 'C';    //C
+        xTa2.cmd[0] = 'C';  //C
         //完成标记
         xInit._show_ch = 1;
     }
@@ -133,11 +132,21 @@ void show_ch_init(void)
 
 void show_ch_disp(void)
 {
+    /*为了解决屏幕黑屏现象，重启屏幕操作*/
+    static int resetCnt = 0;
+
+    if(resetCnt++ >= 5)
+    {
+        oled_reset();
+        resetCnt = 0;
+    }
+
     show_ch_init();
     if (xUI.cID != uuzUI_SHOW_CH) {
         ui_id_set(uuzUI_SHOW_CH, 0);
         foucs_set(0);
         LOG_I("Show UI open");
+        xSta[_S_LIGHT_MANUAL] = 0;
         //初始化数据
         xCh1.val = 65535;
         xCh1.cmd[0] = '%';
@@ -150,8 +159,8 @@ void show_ch_disp(void)
         // 清空OLED屏幕
         clear_screen(_SYNC_A);
         //更新相关数据
-        ch_info_disp(_DATA_, _CHANNEL_1);
-        ch_info_disp(_DATA_, _CHANNEL_2);
+        ch1_info_disp(_DATA_);
+        ch2_info_disp(_DATA_);
         //刷新OLED屏幕数据
         sync_oled(_SYNC_A);
         //清除计数延时
@@ -159,15 +168,14 @@ void show_ch_disp(void)
         //该界面不闪烁
         xUI.blink = 0;
     } else {
-        ch_info_disp(_OLED_, _CHANNEL_1);
-        ch_info_disp(_OLED_, _CHANNEL_2);
+        ch1_info_disp(_OLED_);
+        ch2_info_disp(_OLED_);
     }
 }
 
 void show_ch_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_up:
             show_ui(uuzUI_SHOW_DATE);
             break;
@@ -189,102 +197,170 @@ void show_ch_opt(u16 keyId)
     }
 }
 
-void ch_info_disp(u8 type, u8 ch)
+/**
+ * @brief 显示线路1的数据
+ * 
+ * @param type 
+ */
+void ch1_info_disp(u8 type)
+{
+    if (xUI.cID == uuzUI_SHOW_CH) {
+        //显示线路1/2的灯光状态--温度状态
+        //先读取温度设备是否在线
+        if (xSta[_S_CH1_TEMP_EN] == 1) {
+            //如果有传感器设备错误提示,清除数据
+            if (xCh1.cmd[0] == 'S') {
+                disp_txt(type, &xCh1, SENSOR_NULL_TIP);
+                xCh1.cmd[0] = '%';
+            }
+            //设置标题
+            //显示线路的灯光强度
+            if (get_data(_D_LT, _L_CH1_OUTPUT_MODE) == _LIGHT_MODE_OFF) {
+                if (xCh1.val != 0) {
+                    //如果数据不相同
+                    disp_txt(type, &xCh1, "OFF ");
+                    xCh1.val = 0;
+                }
+            } else {
+                //设备为关闭状态
+                if (xSta[_S_CH1_DAC_STA] == uuzLTS_OFF) {
+                    if (xCh1.val != 0) {
+                        //NOTE:如果是关闭状态
+                        disp_txt(type, &xCh1, "OFF ");
+                        xCh1.val = 0;
+                    }
+                } else {
+                    level_get(_CHANNEL_1, 0);
+                    if (xCh1.val != xCache.level) {
+                        xCh1.val = xCache.level;
+                        disp_value(type, &xCh1, "%");
+                    }
+                }
+            }
+
+            //如果数据不相同,或者单位不同
+            if (xTa1.val != xSta[_S_CH1_TEMP_VAL]) {
+                xTa1.val = xSta[_S_CH1_TEMP_VAL];
+                //检测单位F/C
+                if (get_data(_D_LT, _L_TEMP_UNITS) == _TYPE_F) {
+                    disp_temperature(type, &xTa1, "F");
+                } else {
+                    disp_temperature(type, &xTa1, "C");
+                }
+            }
+        } else {
+            //显示错误数据提示
+            if (xCh1.cmd[0] != 'S') {
+                disp_txt(type, &xCh1, SENSOR_ERR_TIP);
+                xCh1.cmd[0] = 'S';
+                xCh1.val = 65535;
+                xTa1.val = 65535;
+            }
+        }
+    }
+}
+
+/**
+ * @brief 显示线路2的数据
+ * 
+ * @param type 
+ */
+void ch2_info_disp(u8 type)
 {
     //实时缓存数据
-    Value_Typedef_t * xCh;
-    Value_Typedef_t * xTa;
+    Value_Typedef_t* xCh;
+    Value_Typedef_t* xTa;
 
     if (xUI.cID == uuzUI_SHOW_CH) {
-        //选择插件
-        if (ch == _CHANNEL_1) {
-            xCh = &xCh1;
-            xTa = &xTa1;
-        } else if (ch == _CHANNEL_2) {
-            xCh = &xCh2;
-            xTa = &xTa2;
-        }
+        xCh = &xCh2;
+        xTa = &xTa2;
 
         //显示线路1/2的灯光状态--温度状态
         //先读取温度设备是否在线
-        if (xSta[_S_CH1_TEMP_EN + _CH_DIS(ch)] == 1) {
+        if (xSta[_S_CH2_TEMP_EN] == 1) {
             //如果有传感器设备错误提示,清除数据
             if (xCh->cmd[0] == 'S') {
                 disp_txt(type, xCh, SENSOR_NULL_TIP);
                 xCh->cmd[0] = '%';
             }
             //设置标题
-            //如果是线路2,判断显示内容模式
-            if (ch == _CHANNEL_2) {
-                if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_FOLLOW) {
-                    //跟随模式
-                    //显示线路的灯光强度
-                    if (xCache.chMode[_CHANNEL_1] == _LIGHT_MODE_OFF) {
-                        if (xCh->val != 0) {
-                            //如果数据不相同
-                            disp_txt(type, xCh, "OFF");
-                            xCh->val = 0;
-                        }
-                    } else {
-                        level_get(_CHANNEL_1, 0);
-                        if (xCh->val != xCache.level) {
-                            xCh->val = xCache.level;
-                            disp_value(type, xCh, "%");
-                        }
+            //如果是线路2-跟随模式
+            if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_FOLLOW) {
+                //跟随模式
+                //显示线路1的灯光模式
+                if (get_data(_D_LT, _L_CH1_OUTPUT_MODE) == _LIGHT_MODE_OFF) {
+                    if (xCh->val != 0) {
+                        //如果数据不相同
+                        disp_txt(type, xCh, "OFF ");
+                        xCh->val = 0;
                     }
-                } else if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_INVERSE) {
-                    //互斥模式
-                    //显示线路的灯光强度
-                    if (xCache.chMode[_CHANNEL_1] == _LIGHT_MODE_OFF) {
-                        level_get(_CHANNEL_1, 0);
-                        if (xCh->val != xCache.level) {
-                            xCh->val = xCache.level;
-                            disp_value(type, xCh, "%");
-                        }
-                    } else {
+                } else {
+                    //设备为关闭状态
+                    if (xSta[_S_CH1_DAC_STA] == uuzLTS_OFF) {
                         if (xCh->val != 0) {
-                            //如果数据不相同
-                            disp_txt(type, xCh, "OFF");
-                            xCh->val = 0;
-                        }
-                    }
-                } else if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_INDEPENDENT) {
-                    //独立模式
-                    //显示线路的灯光强度
-                    if (xCache.chMode[ch] == _LIGHT_MODE_OFF) {
-                        if (xCh->val != 0) {
-                            //如果数据不相同
-                            disp_txt(type, xCh, "OFF");
+                            //NOTE:如果是关闭状态
+                            disp_txt(type, xCh, "OFF ");
                             xCh->val = 0;
                         }
                     } else {
-                        level_get(ch, 0);
-                        if (xCh->val != xCache.level) {
-                            xCh->val = xCache.level;
+                        if (xCh->val != get_data(_D_LT, _L_CH1_OUTPUT_LEVEL)) {
+                            xCh->val = get_data(_D_LT, _L_CH1_OUTPUT_LEVEL);
                             disp_value(type, xCh, "%");
                         }
                     }
                 }
-            } else {
+            } else if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_INVERSE) {
+                //互斥模式
+                //显示线路1的相反灯光强度
+                if (get_data(_D_LT, _L_CH1_OUTPUT_MODE) == _LIGHT_MODE_OFF) {
+                    //线路2表示为常亮
+                    if (xCh->val != get_data(_D_LT, _L_CH1_OUTPUT_LEVEL)) {
+                        xCh->val = get_data(_D_LT, _L_CH1_OUTPUT_LEVEL);
+                        disp_value(type, xCh, "%");
+                    }
+                } else {
+                    //线路1设备为开启模式,线路2按照亮度显示
+                    if (xSta[_S_CH2_DAC_STA] == uuzLTS_OFF) {
+                        if (xCh->val != 0) {
+                            //NOTE:如果是关闭状态
+                            disp_txt(type, xCh, "OFF ");
+                            xCh->val = 0;
+                        }
+                    } else {
+                        if (xCh->val != get_data(_D_LT, _L_CH1_OUTPUT_LEVEL)) {
+                            xCh->val = get_data(_D_LT, _L_CH1_OUTPUT_LEVEL);
+                            disp_value(type, xCh, "%");
+                        }
+                    }
+                }
+            } else if (get_data(_D_LT, _L_CH2_MODE) == uuzLIGHT_INDEPENDENT) {
+                //独立模式
                 //显示线路的灯光强度
-                if (xCache.chMode[ch] == _LIGHT_MODE_OFF) {
+                if (get_data(_D_LT, _L_CH2_OUTPUT_MODE) == _LIGHT_MODE_OFF) {
                     if (xCh->val != 0) {
                         //如果数据不相同
-                        disp_txt(type, xCh, "OFF");
+                        disp_txt(type, xCh, "OFF ");
                         xCh->val = 0;
                     }
                 } else {
-                    level_get(ch, 0);
-                    if (xCh->val != xCache.level) {
-                        xCh->val = xCache.level;
-                        disp_value(type, xCh, "%");
+                    if (xSta[_S_CH2_DAC_STA] == uuzLTS_OFF) {
+                        if (xCh->val != 0) {
+                            //如果数据不相同
+                            disp_txt(type, xCh, "OFF ");
+                            xCh->val = 0;
+                        }
+                    } else {
+                        if (xCh->val != get_data(_D_LT, _L_CH2_OUTPUT_LEVEL)) {
+                            xCh->val = get_data(_D_LT, _L_CH2_OUTPUT_LEVEL);
+                            disp_value(type, xCh, "%");
+                        }
                     }
                 }
             }
 
             //如果数据不相同,或者单位不同
-            if (xTa->val != xSta[_S_CH1_TEMP_VAL + _CH_DIS(ch)]) {
-                xTa->val = xSta[_S_CH1_TEMP_VAL + _CH_DIS(ch)];
+            if (xTa->val != xSta[_S_CH2_TEMP_VAL]) {
+                xTa->val = xSta[_S_CH2_TEMP_VAL];
                 //检测单位F/C
                 if (get_data(_D_LT, _L_TEMP_UNITS) == _TYPE_F) {
                     disp_temperature(type, xTa, "F");
@@ -317,14 +393,14 @@ void show_date_init(void)
         xDate_S.foucs = 0;
         xDate_S.h = 1;
         xDate_S.w = 0;
-        xDate_S.cmd[0] = '\0';    //W
+        xDate_S.cmd[0] = '\0';  //W
 
         xTime_S.val = 0;
         xTime_S.blink = 0;
         xTime_S.foucs = 0;
         xTime_S.h = 1;
         xTime_S.w = 10;
-        xTime_S.cmd[0] = '\0';    //W
+        xTime_S.cmd[0] = '\0';  //W
 
         //完成标记
         xInit._show_date = 1;
@@ -357,8 +433,7 @@ void show_date_disp(void)
 
 void show_date_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_up:
             show_ui(uuzUI_SHOW_TA);
             break;
@@ -422,7 +497,7 @@ Value_Typedef_t xTaL[2];
 //初始化界面控件参数
 void show_ta_init(void)
 {
-//初始化控件
+    //初始化控件
     if (xInit._show_ta == 0) {
 
         for (u8 ucIndex = 0; ucIndex < 2; ucIndex++) {
@@ -431,14 +506,14 @@ void show_ta_init(void)
             xTaH[ucIndex].foucs = 0;
             xTaH[ucIndex].h = 0 + ucIndex;
             xTaH[ucIndex].w = 2;
-            xTaH[ucIndex].cmd[0] = '\0';    //W
+            xTaH[ucIndex].cmd[0] = '\0';  //W
 
             xTaL[ucIndex].val = 0;
             xTaL[ucIndex].blink = 0;
             xTaL[ucIndex].foucs = 0;
             xTaL[ucIndex].h = 0 + ucIndex;
             xTaL[ucIndex].w = 10;
-            xTaL[ucIndex].cmd[0] = '\0';    //W
+            xTaL[ucIndex].cmd[0] = '\0';  //W
         }
 
         //完成标记
@@ -488,8 +563,7 @@ void show_ta_disp(void)
 
 void show_ta_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_up:
             show_ui(uuzUI_SHOW_CH);
             break;
@@ -651,9 +725,9 @@ void info_disp(void)
         drawToOLED(0, 0, cmd, OLED_W);
         //型号标签
         if (xSysConfig.Sys[_D_DEVICE_TYPE] == _EL1) {
-            drawToOLED(1, 0, "SYSTEM      EL1 ", OLED_W);
+            drawToOLED(1, 0, "SYSTEM      BR1 ", OLED_W);
         } else if (xSysConfig.Sys[_D_DEVICE_TYPE] == _EL2) {
-            drawToOLED(1, 0, "SYSTEM      EL2 ", OLED_W);
+            drawToOLED(1, 0, "SYSTEM      BR2 ", OLED_W);
         }
         xUI.delay = 0;
         xUI.blink = 0;
@@ -663,8 +737,7 @@ void info_disp(void)
 void info_opt(u16 keyId)
 {
     LOG_I("keyID = %d, UI-ID = %d", keyId, xUI.cID);
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_back:
             show_ui(xUI.cID / 10);
             break;
@@ -689,18 +762,18 @@ void light_init(void)
             xLevel[ucIndex].foucs = 0;
             xLevel[ucIndex].h = ucIndex;
             xLevel[ucIndex].w = 6;
-            xLevel[ucIndex].cmd[0] = '%';    //C
-            xLevel[ucIndex].cmd[1] = ' ';    //切换长度100->99
-            xLevel[ucIndex].cmd[2] = ' ';    //切换长度10->9
+            xLevel[ucIndex].cmd[0] = '%';  //C
+            xLevel[ucIndex].cmd[1] = ' ';  //切换长度100->99
+            xLevel[ucIndex].cmd[2] = ' ';  //切换长度10->9
 
             xWatt[ucIndex].val = 0;
             xWatt[ucIndex].blink = 0;
             xWatt[ucIndex].foucs = 0;
             xWatt[ucIndex].h = ucIndex;
             xWatt[ucIndex].w = 11;
-            xWatt[ucIndex].cmd[0] = 'W';    //C
-            xWatt[ucIndex].cmd[1] = ' ';    //切换长度1000->999
-            xWatt[ucIndex].cmd[2] = ' ';    //切换长度100->99
+            xWatt[ucIndex].cmd[0] = 'W';  //C
+            xWatt[ucIndex].cmd[1] = ' ';  //切换长度1000->999
+            xWatt[ucIndex].cmd[2] = ' ';  //切换长度100->99
         }
 
         LOG_I("Light info UI open");
@@ -718,6 +791,7 @@ void light_disp(void)
         foucs_set(0);
         LOG_I("Light info UI open");
         xUI.blink = 0;
+        xSta[_S_LIGHT_MANUAL] = 0;
         //刚进入界面获取相关数据
         level_state_get(_CHANNEL_1, 0);
         level_state_get(_CHANNEL_2, 0);
@@ -739,6 +813,17 @@ void light_disp(void)
         xUI.delay = 0;
         xUI.blink = 1;
     } else {
+        if (xSta[_S_LIGHT_MANUAL] == 0) {
+            //刚进入界面获取相关数据
+            level_state_get(_CHANNEL_1, 1);
+            level_state_get(_CHANNEL_2, 1);
+            //显示等级数据
+            light_level_disp(_OLED_, _CHANNEL_1);
+            light_level_disp(_OLED_, _CHANNEL_2);
+            //如果有瓦数显示，显示瓦数
+            light_watt_disp(_OLED_, _CHANNEL_1);
+            light_watt_disp(_OLED_, _CHANNEL_2);
+        }
         //光标闪烁
         if (xUI.blink == 1) {
             disp_cursor(_OLED_, &xCursor);
@@ -748,22 +833,24 @@ void light_disp(void)
 
 void light_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_up:
             case _key_l_up:
             xUI.blink = 0;
             if (xCache.level_L[xUI.cFoucs] < _LIGHT_MAX) {
                 xCache.level_L[xUI.cFoucs] += _LIGHT_STEP;
                 level_state_get(xUI.cFoucs, 1);
-                //设置DAC的当前VALUE值
-                level_to_dac(xUI.cFoucs, xCache.level_L[xUI.cFoucs]);
+                xSta[_S_LIGHT_MANUAL] = 1;
+                //设置DAC的手动当前VALUE值
+                dac_set_value(xUI.cFoucs, xCache.level_L[xUI.cFoucs]);
                 //显示等级数据
                 light_level_disp(_OLED_, xUI.cFoucs);
                 //如果有瓦数显示，显示瓦数
                 if (xWatt[xUI.cFoucs].val > 0) {
                     light_watt_disp(_OLED_, xUI.cFoucs);
                 }
+                //处理灯光参数
+                rt_light_ch_event(xUI.cFoucs, uuzLTS_ON);
             }
             xUI.blink = 1;
             break;
@@ -773,14 +860,17 @@ void light_opt(u16 keyId)
             if (xCache.level_L[xUI.cFoucs] > _LIGHT_MIN) {
                 xCache.level_L[xUI.cFoucs] -= _LIGHT_STEP;
                 level_state_get(xUI.cFoucs, 1);
-                //设置DAC的当前VALUE值
-                level_to_dac(xUI.cFoucs, xCache.level_L[xUI.cFoucs]);
+                xSta[_S_LIGHT_MANUAL] = 1;
+                //设置DAC的手动当前VALUE值
+                dac_set_value(xUI.cFoucs, xCache.level_L[xUI.cFoucs]);
                 //显示等级数据
                 light_level_disp(_OLED_, xUI.cFoucs);
                 //如果有瓦数显示，显示瓦数
                 if (xWatt[xUI.cFoucs].val > 0) {
                     light_watt_disp(_OLED_, xUI.cFoucs);
                 }
+                //处理灯光参数
+                rt_light_ch_event(xUI.cFoucs, uuzLTS_ON);
             }
             xUI.blink = 1;
             break;
@@ -796,6 +886,8 @@ void light_opt(u16 keyId)
             xUI.blink = 1;
             break;
         case _key_back:
+            //清除标记
+            xSta[_S_LIGHT_MANUAL] = 0;
             show_ui(uuzUI_SHOW_CH);
             break;
         default:
@@ -816,7 +908,7 @@ void light_title_disp(u8 ch)
 
 void light_level_disp(u8 type, u8 ch)
 {
-    Value_Typedef_t * level = &xLevel[ch];
+    Value_Typedef_t* level = &xLevel[ch];
 
     if (xUI.cID == uuzUI_LIGHT) {
         //显示线路的灯光强度
@@ -828,7 +920,7 @@ void light_level_disp(u8 type, u8 ch)
 
 void light_watt_disp(u8 type, u8 ch)
 {
-    Value_Typedef_t * watt = &xWatt[ch];
+    Value_Typedef_t* watt = &xWatt[ch];
 
     if (xUI.cID == uuzUI_LIGHT) {
         //加载瓦数

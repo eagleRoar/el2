@@ -11,6 +11,7 @@
 
 #include <sys/time.h>
 
+time_t time(time_t *t);
 time_t mktime(struct tm * const t);
 
 char *asctime(const struct tm *timeptr);

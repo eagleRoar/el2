@@ -118,14 +118,15 @@ rt_err_t set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
 
     /* update date. */
     tm_new.tm_year = year - 1900;
-    tm_new.tm_mon = month - 1; /* tm_mon: 0~11 */
+    tm_new.tm_mon  = month - 1; /* tm_mon: 0~11 */
     tm_new.tm_mday = day;
 
     /* converts the local time in time to calendar time. */
     now = mktime(&tm_new);
 
     device = rt_device_find("rtc");
-    if (device == RT_NULL) {
+    if (device == RT_NULL)
+    {
         return -RT_ERROR;
     }
 
@@ -167,14 +168,15 @@ rt_err_t set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
 
     /* update time. */
     tm_new.tm_hour = hour;
-    tm_new.tm_min = minute;
-    tm_new.tm_sec = second;
+    tm_new.tm_min  = minute;
+    tm_new.tm_sec  = second;
 
     /* converts the local time in time to calendar time. */
     now = mktime(&tm_new);
 
     device = rt_device_find("rtc");
-    if (device == RT_NULL) {
+    if (device == RT_NULL)
+    {
         return -RT_ERROR;
     }
 
@@ -219,7 +221,7 @@ int rt_rtc_ntp_sync_init(void)
     }
 
     init_ok = RT_TRUE;
-
+		
     return RT_EOK;
 }
 INIT_COMPONENT_EXPORT(rt_rtc_ntp_sync_init);

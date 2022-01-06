@@ -1,22 +1,25 @@
 ﻿/* Includes ------------------------------------------------------------------*/
-#include <rtthread.h>
 #include "string.h"
+#include <rtthread.h>
+#include <uuzUI.h>
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzINIT.h"
 #include "typedefDEF.h"
+#include "uuzINIT.h"
 /* -------------------------------------------------------------------------------*/
 #include "uuzBTN.h"
-#include "uuzRTC.h"
+#include "uuzDAC.h"
+#include "uuzLED.h"
+#include "uuzLIGHT.h"
 #include "uuzOpt.h"
+#include "uuzRTC.h"
 #include "uuzTEMP.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
+#include "uuzConfig1602.h"
 #include "uuzOLED_1602.h"
 #include "uuzUI_1602.h"
-#include "uuzConfig1602.h"
 #include "uuzUI_Cache.h"
 /* -------------------------------------------------------------------------------*/
 #define DBG_ENABLE
@@ -286,10 +289,17 @@ void factory_reset_opt(u16 keyId)
                 uuz_vDeviceCacheDefaultInit();
                 /* 清除温度探头的数据 */
                 uuz_vTempData_Init();
-                /* 更新时间数据的数据 */
-                set_rtc(2020, 1, 1, 8, 0, 0);
+                uuz_vTempDevice_Init();
+                /* 清除DAC的数据 */
+                uuz_vDacData_Init();
                 /* 初始化设备配置数据 */
                 uuz_vDeviceConfigInit(1);
+                /* 更新时间数据的数据 */
+                set_rtc(2020, 1, 1, 8, 0, 0);
+                /* 关闭灯光 */
+                rt_led_init();
+                /* 初始化端口状态 */
+                rt_light_init();
             }
             //YES or NO
             show_ui(uuzUI_MENU);
@@ -342,7 +352,7 @@ void logs_opt(u16 keyId)
             logs_info_disp();
             break;
         case _key_enter:
-            case _key_back:
+        case _key_back:
             show_ui(xUI.cID / 10);
             break;
         default:
@@ -353,10 +363,12 @@ void logs_opt(u16 keyId)
 void logs_info_disp(void)
 {
     char cmd[OLED_W] =
-            { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 };
+        { 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20 };
     char cmd_t[OLED_W];
     u16 usHigh = 0;
     u16 usLow = 0;
+    u16 usHour = 0;
+    char cTime = ' ';
 
     if (xUI.cID == uuzUI_MENU_LOGS) {
         if (xUI.cFoucs < xUI.maxFoucs) {
@@ -368,24 +380,44 @@ void logs_info_disp(void)
                     //没有有效数据
                     drawToOLED(1, 0, uuzDATA_NA, OLED_W);
                 } else {
+                    usHour = xLogs[xUI.cFoucs].time[0];
+                    cTime = ' ';
+                    if (get_data(_D_SYS, _D_TIME_FORMAT) == _TYPE_12HOUR) {
+                        if (usHour > 12) {
+                            usHour %= 12;
+                            cTime = 'P';
+                        } else {
+                            cTime = 'A';
+                        }
+                    }
                     if (xSysConfig.Sys[_D_DATE_FORMAT] == _TYPE_DDMMYY) {
-                        rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d", xLogs[xUI.cFoucs].date[2],
-                                xLogs[xUI.cFoucs].date[1], (xLogs[xUI.cFoucs].date[0] % 100), xLogs[xUI.cFoucs].time[0],
-                                xLogs[xUI.cFoucs].time[1]);
+                        rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d%c", xLogs[xUI.cFoucs].date[2],
+                                xLogs[xUI.cFoucs].date[1], (xLogs[xUI.cFoucs].date[0] % 100), usHour,
+                                xLogs[xUI.cFoucs].time[1], cTime);
                     } else {
-                        rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d", xLogs[xUI.cFoucs].date[1],
-                                xLogs[xUI.cFoucs].date[2], (xLogs[xUI.cFoucs].date[0] % 100), xLogs[xUI.cFoucs].time[0],
-                                xLogs[xUI.cFoucs].time[1]);
+                        rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d%c", xLogs[xUI.cFoucs].date[1],
+                                xLogs[xUI.cFoucs].date[2], (xLogs[xUI.cFoucs].date[0] % 100), usHour,
+                                xLogs[xUI.cFoucs].time[1], cTime);
                     }
                     drawToOLED(1, 0, cmd, OLED_W);
                 }
             } else if (xUI.cFoucs == _G_POWER_DOWN) {
+                usHour = xLogs[xUI.cFoucs].time[0];
+                cTime = ' ';
+                if (get_data(_D_SYS, _D_TIME_FORMAT) == _TYPE_12HOUR) {
+                    if (usHour > 12) {
+                        usHour %= 12;
+                        cTime = 'P';
+                    } else {
+                        cTime = 'A';
+                    }
+                }
                 if (xSysConfig.Sys[_D_DATE_FORMAT] == _TYPE_DDMMYY) {
-                    rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d", xLogs[xUI.cFoucs].date[2], xLogs[xUI.cFoucs].date[1],
-                            (xLogs[xUI.cFoucs].date[0] % 100), xLogs[xUI.cFoucs].time[0], xLogs[xUI.cFoucs].time[1]);
+                    rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d%c", xLogs[xUI.cFoucs].date[2], xLogs[xUI.cFoucs].date[1],
+                            (xLogs[xUI.cFoucs].date[0] % 100), usHour, xLogs[xUI.cFoucs].time[1], cTime);
                 } else {
-                    rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d", xLogs[xUI.cFoucs].date[1], xLogs[xUI.cFoucs].date[2],
-                            (xLogs[xUI.cFoucs].date[0] % 100), xLogs[xUI.cFoucs].time[0], xLogs[xUI.cFoucs].time[1]);
+                    rt_sprintf(cmd, "%02d/%02d/%02d  %02d:%02d%c", xLogs[xUI.cFoucs].date[1], xLogs[xUI.cFoucs].date[2],
+                            (xLogs[xUI.cFoucs].date[0] % 100), usHour, xLogs[xUI.cFoucs].time[1], cTime);
                 }
                 drawToOLED(1, 0, cmd, OLED_W);
             } else {

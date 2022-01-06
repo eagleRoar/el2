@@ -52,6 +52,10 @@ int uuz_gpio_init(void)
     rt_pin_mode(LCD_CS, PIN_MODE_OUTPUT);
     rt_pin_mode(LCD_DC, PIN_MODE_OUTPUT);
 
+    rt_pin_mode(ECM1_CTR, PIN_MODE_OUTPUT);
+    rt_pin_mode(ECM2_CTR, PIN_MODE_OUTPUT);
+    rt_pin_mode(ALM_CTR, PIN_MODE_OUTPUT);
+
     //需要配置成GPIO-OUTPUT
     rt_pin_mode(RCC_1, PIN_MODE_OUTPUT);
     rt_pin_mode(RCC_0, PIN_MODE_OUTPUT);

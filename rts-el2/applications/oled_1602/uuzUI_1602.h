@@ -13,13 +13,13 @@ extern "C" {
 #endif
 
 //通用函数
-void value_set(Value_Typedef_t * xValue, u32 h, u32 w);
-void disp_txt(rt_uint8_t type, Value_Typedef_t * xValue, char * cmd);
-void disp_value(rt_uint8_t type, Value_Typedef_t * xValue, char * cmd);
-void disp_time(rt_uint8_t type, Value_Typedef_t * xValue);
-void disp_date(rt_uint8_t type, Value_Typedef_t * xValue);
-void disp_temperature(rt_uint8_t type, Value_Typedef_t * xValue, char * cmd);
-void disp_cursor(rt_uint8_t type, Value_Typedef_t * xValue);
+void value_set(Value_Typedef_t* xValue, u32 h, u32 w);
+void disp_txt(rt_uint8_t type, Value_Typedef_t* xValue, char* cmd);
+void disp_value(rt_uint8_t type, Value_Typedef_t* xValue, char* cmd);
+void disp_time(rt_uint8_t type, Value_Typedef_t* xValue);
+void disp_date(rt_uint8_t type, Value_Typedef_t* xValue);
+void disp_temperature(rt_uint8_t type, Value_Typedef_t* xValue, char* cmd);
+void disp_cursor(rt_uint8_t type, Value_Typedef_t* xValue);
 void disp_units(rt_uint8_t type, u8 h, u8 w, u8 tip);
 void btn_long_event(void);
 u16 level_get(u16 ch, u8 type);
@@ -34,7 +34,8 @@ void save_opt(u16 keyId);
 //SHOW-CHANNEL界面
 void show_ch_disp(void);
 void show_ch_opt(u16 keyId);
-void ch_info_disp(u8 type, u8 ch);
+void ch1_info_disp(u8 type);
+void ch2_info_disp(u8 type);
 //SHOW-DATE界面
 void show_date_init(void);
 void show_date_disp(void);
@@ -87,6 +88,7 @@ void set_temp_levels_opt(u16 keyId);
 void set_temp_levels_cursor_disp(u8 type);
 void set_temp_levels_title_disp(u8 type);
 void set_temp_levels_value_disp(u8 type, u8 step);
+u16 set_temp_limit_get(u8 type, u16 foucs);
 //SETUP-CHANNEL-SUNRISE-SUNSET
 void sunrise_sunset_init(void);
 void sunrise_sunset_disp(void);

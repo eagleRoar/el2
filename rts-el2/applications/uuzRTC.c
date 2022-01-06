@@ -8,9 +8,9 @@
  * 2019-12-09   ZhouXiaomin     first version
  */
 /* Includes ------------------------------------------------------------------*/
+#include "rtc.h"
 #include <rtthread.h>
 #include <string.h>
-#include "rtc.h"
 /* ------------------------------------------------------------------*/
 #include "uuzInit.h"
 #include "uuzRTC.h"
@@ -46,12 +46,21 @@ void uuz_vRTCDataGet(void)
 }
 
 /**
- * @brief uuz_usRTC_GetMinutes
+ * @brief 计算当前的分钟数据
  * @return  u16 mins
  */
 u16 uuz_usRTC_GetMinutes(void)
 {
     return (rTm.tm_hour * 60 + rTm.tm_min);
+}
+
+/**
+ * @brief 计算当前的秒数
+ * @return  u32 seconds
+ */
+u32 uuz_ulRTC_GetSeconds(void)
+{
+    return (uuz_usRTC_GetMinutes() * 60 + rTm.tm_sec);
 }
 
 /**

@@ -3,6 +3,7 @@
 
 #include "typedefDEF.h"
 #include "typedefUI.h"
+#include "uuzConfigLIGHT.h"
 
 //通道标记
 #define _CHANNEL_1  (0x00U)     //通道1
@@ -14,7 +15,7 @@
 #define _PRESS_MODIFY  (0x02U)     //修改状态
 
 //亮度相关
-#define _LIGHT_MIN  (50U)       //亮度最小值
+#define _LIGHT_MIN  (uuzLIGHT_VAL_MIN)       //亮度最小值
 #define _LIGHT_MAX  (115U)      //亮度最大值
 #define _LIGHT_STEP  (1U)       //亮度单步值
 

@@ -805,8 +805,6 @@ int rt_hw_pin_init(void)
     __HAL_RCC_GPIOK_CLK_ENABLE();
 #endif
 
-    //__HAL_AFIO_REMAP_SWJ_NOJTAG();              //禁用JTAG
-    
     return rt_device_pin_register("pin", &_stm32_pin_ops, RT_NULL);
 }
 

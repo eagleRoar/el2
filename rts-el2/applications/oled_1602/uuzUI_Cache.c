@@ -9,7 +9,7 @@
 char cmd_1[MENU_LIST_MAX][OLED_W] =
     {
     //1级菜单
-            "LOGS         ",    //1级菜单:日志查看
+            "LOGS         ",//1级菜单:日志查看
             "CHANNEL 1    ",    //1级菜单:通道1配置
             "CHANNEL 2    ",    //1级菜单:通道2配置
             "TEMP PROBE   ",    //1级菜单:温度配置

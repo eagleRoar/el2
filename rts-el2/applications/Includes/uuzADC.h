@@ -12,6 +12,7 @@
 #define CH2_VOL_CHANNEL       (7U)        /* ADC1 通道 */
 #define CH1_TA_CHANNEL        (8U)        /* ADC2 通道 */
 #define CH2_TA_CHANNEL        (9U)        /* ADC2 通道 */
+#define VOL_IN_CHANNEL        (17U)        /* ADC1 通道 */  //内部参考电压,应该是4095
 
 #define REFER_VOLTAGE         (330U)      /* 参考电压 3.3V,数据精度乘以100保留2位小数*/
 #define CONVERT_BITS          (1 << 12)   /* 转换位数为12位 */

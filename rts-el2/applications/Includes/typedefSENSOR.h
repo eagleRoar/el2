@@ -3,7 +3,7 @@
 
 #include "typedefDEF.h"
 
-#define ANALYSIS_COUNT (10U)
+#define ANALYSIS_COUNT (5U)
 
 typedef struct _sensor_data_t
 {

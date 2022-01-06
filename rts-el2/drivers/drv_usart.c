@@ -6,8 +6,10 @@
  * Change Logs:
  * Date           Author       Notes
  * 2018-10-30     SummerGift   first version
+ * 2020-05-18     chenyaxing   modify usart3 remap check
  */
-
+#include "string.h"
+#include "stdlib.h"
 #include "drv_common.h"
 #include "uart_config.h"
 #include "board.h"
@@ -82,11 +84,8 @@ struct stm32_uart_config
     struct dma_config *dma_rx;
     struct dma_config *dma_tx;
 #endif
-
-    GPIO_TypeDef *tx_port;
-    GPIO_TypeDef *rx_port;
-    rt_uint32_t tx_pin;
-    rt_uint32_t rx_pin;
+    const char *tx_pin_name;
+    const char *rx_pin_name;
 };
 
 /* stm32 uart dirver class */
@@ -332,6 +331,26 @@ static rt_err_t stm32_gpio_clk_enable(GPIO_TypeDef *gpiox)
     return RT_EOK;
 }
 
+static int up_char(char * c)
+{
+    if ((*c >= 'a') && (*c <= 'z'))
+    {
+        *c = *c - 32;
+    }
+    return 0;
+}
+
+static void get_pin_by_name(const char* pin_name, GPIO_TypeDef **port, uint16_t *pin)
+{
+    int pin_num = atoi((char*) &pin_name[2]);
+    char port_name = pin_name[1];
+    up_char(&port_name);
+    up_char(&port_name);
+    *port = ((GPIO_TypeDef *) ((uint32_t) GPIOA
+            + (uint32_t) (port_name - 'A') * ((uint32_t) GPIOB - (uint32_t) GPIOA)));
+    *pin = (GPIO_PIN_0 << pin_num);
+}
+
 static uint16_t stm32_get_pin(GPIO_TypeDef *pin_port, rt_uint32_t pin_num)
 {
     return (uint16_t)((16 * (((rt_base_t)pin_port - (rt_base_t)GPIOA_BASE)/(0x0400UL))) + (__rt_ffs(pin_num) - 1));
@@ -339,11 +358,20 @@ static uint16_t stm32_get_pin(GPIO_TypeDef *pin_port, rt_uint32_t pin_num)
 
 static rt_err_t stm32_gpio_configure(struct stm32_uart_config *config)
 {
+#define UART_IS_TX        (1U<<7)
+#define UART_IS_RX        (0U)
+
     rt_uint16_t tx_pin_num = 0, rx_pin_num = 0;
     int rx_index = 0, tx_index = 0, index = 0;
     int uart_num = 0;
     rt_bool_t uart_is_remap = 0;
-
+    GPIO_TypeDef *tx_port;
+    GPIO_TypeDef *rx_port;
+    uint16_t tx_pin;
+    uint16_t rx_pin;
+    get_pin_by_name(config->rx_pin_name, &rx_port, &rx_pin);
+    get_pin_by_name(config->tx_pin_name, &tx_port, &tx_pin);
+    
     struct gpio_uart_remap {
         /* index get by GET_PIN */
         rt_uint16_t pin_index;
@@ -353,100 +381,107 @@ static rt_err_t stm32_gpio_configure(struct stm32_uart_config *config)
         rt_int8_t remap_uart;
     };
 
-    static const struct gpio_uart_remap uart_remaps[] =
-    {
-        /* usart1 configure */
-        { .pin_index = GET_PIN(A, 9),  .normal_uart =  1, .remap_uart = -1 },
-        { .pin_index = GET_PIN(A, 10), .normal_uart =  1, .remap_uart = -1 },
-        { .pin_index = GET_PIN(B, 6),  .normal_uart = -1, .remap_uart =  1 },
-        { .pin_index = GET_PIN(B, 7),  .normal_uart = -1, .remap_uart =  1 },
+   static const struct gpio_uart_remap uart_remaps[] =
+       {
+           /* usart1 configure */
+           { .pin_index = GET_PIN(A, 9),  .normal_uart =  1, .remap_uart = -1 },
+           { .pin_index = GET_PIN(A, 10), .normal_uart =  1, .remap_uart = -1 },
+           { .pin_index = GET_PIN(B, 6),  .normal_uart = -1, .remap_uart =  1 },
+           { .pin_index = GET_PIN(B, 7),  .normal_uart = -1, .remap_uart =  1 },
 
-        /* usart2 configure */
-        { .pin_index = GET_PIN(A, 2),  .normal_uart =  2, .remap_uart = -1 },
-        { .pin_index = GET_PIN(A, 3),  .normal_uart =  2, .remap_uart = -1 },
-        { .pin_index = GET_PIN(D, 5),  .normal_uart = -1, .remap_uart =  2 },
-        { .pin_index = GET_PIN(D, 6),  .normal_uart = -1, .remap_uart =  2 },
+           /* usart2 configure */
+           { .pin_index = GET_PIN(A, 2),  .normal_uart =  2, .remap_uart = -1 },
+           { .pin_index = GET_PIN(A, 3),  .normal_uart =  2, .remap_uart = -1 },
+           { .pin_index = GET_PIN(D, 5),  .normal_uart = -1, .remap_uart =  2 },
+           { .pin_index = GET_PIN(D, 6),  .normal_uart = -1, .remap_uart =  2 },
 
-        /* usart3 configure */
-        { .pin_index = GET_PIN(B, 10), .normal_uart =  3, .remap_uart = -1 },
-        { .pin_index = GET_PIN(B, 11), .normal_uart =  3, .remap_uart = -1 },
-        { .pin_index = GET_PIN(D, 8),  .normal_uart = -1, .remap_uart =  3 },
-        { .pin_index = GET_PIN(D, 9),  .normal_uart = -1, .remap_uart =  3 },
-        { .pin_index = GET_PIN(C, 10), .normal_uart =  4, .remap_uart =  3 },
-        { .pin_index = GET_PIN(C, 11), .normal_uart =  4, .remap_uart =  3 },
-    };
+           /* usart3 configure */
+           { .pin_index = GET_PIN(B, 10), .normal_uart =  3, .remap_uart = -1 },
+           { .pin_index = GET_PIN(B, 11), .normal_uart =  3, .remap_uart = -1 },
+           { .pin_index = GET_PIN(D, 8),  .normal_uart = -1, .remap_uart =  3 },
+           { .pin_index = GET_PIN(D, 9),  .normal_uart = -1, .remap_uart =  3 },
+           { .pin_index = GET_PIN(C, 10), .normal_uart =  4, .remap_uart =  3 },
+           { .pin_index = GET_PIN(C, 11), .normal_uart =  4, .remap_uart =  3 },
+       };
+   /* get tx/rx pin index */
+   tx_pin_num = stm32_get_pin(tx_port, tx_pin);
+   rx_pin_num = stm32_get_pin(rx_port, rx_pin);
 
-    /* get tx/rx pin index */
-    tx_pin_num = stm32_get_pin(config->tx_port, config->tx_pin);
-    rx_pin_num = stm32_get_pin(config->rx_port, config->rx_pin);
+   for (index = 0; index < sizeof(uart_remaps) / sizeof(struct gpio_uart_remap); index++)
+   {
+       if (uart_remaps[index].pin_index == tx_pin_num)
+       {
+           tx_index = index;
+       }
+       else if (uart_remaps[index].pin_index == rx_pin_num)
+       {
+           rx_index = index;
+       }
+   }
 
-    for (index = 0; index < sizeof(uart_remaps) / sizeof(struct gpio_uart_remap); index++)
-    {
-        if (uart_remaps[index].pin_index == tx_pin_num)
-        {
-            tx_index = index;
-        }
-        else if (uart_remaps[index].pin_index == rx_pin_num)
-        {
-            rx_index = index;
-        }
-    }
+   /* check tx/rx pin remap information */
+   RT_ASSERT(uart_remaps[tx_index].normal_uart == uart_remaps[rx_index].normal_uart);
+   RT_ASSERT(uart_remaps[tx_index].remap_uart == uart_remaps[rx_index].remap_uart);
 
-    /* check tx/rx pin remap information */
-    RT_ASSERT(uart_remaps[tx_index].normal_uart == uart_remaps[rx_index].normal_uart);
-    RT_ASSERT(uart_remaps[tx_index].remap_uart == uart_remaps[rx_index].remap_uart);
+   uart_num = config->name[4] - '0';
+   uart_is_remap = uart_remaps[tx_index].remap_uart == uart_num ? RT_TRUE : RT_FALSE;
 
-    uart_num = config->name[4] - '0';
-    uart_is_remap = uart_remaps[tx_index].remap_uart == uart_num ? RT_TRUE : RT_FALSE;
+   {
 
-    {
+       GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-        GPIO_InitTypeDef GPIO_InitStruct = {0};
+       /* gpio ports clock enable */
+       stm32_gpio_clk_enable(tx_port);
+       if (tx_port != rx_port)
+       {
+           stm32_gpio_clk_enable(rx_port);
+       }
 
-        /* gpio ports clock enable */
-        stm32_gpio_clk_enable(config->tx_port);
-        if (config->tx_port != config->rx_port)
-        {
-            stm32_gpio_clk_enable(config->rx_port);
-        }
+       /* tx pin initialize */
+       GPIO_InitStruct.Pin = tx_pin;
+       GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+       GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+       HAL_GPIO_Init(tx_port, &GPIO_InitStruct);
 
-        /* tx pin initialize */
-        GPIO_InitStruct.Pin = config->tx_pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-        HAL_GPIO_Init(config->tx_port, &GPIO_InitStruct);
+       /* rx pin initialize */
+       GPIO_InitStruct.Pin = rx_pin;
+       GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+       GPIO_InitStruct.Pull = GPIO_NOPULL;
+       HAL_GPIO_Init(rx_port, &GPIO_InitStruct);
 
-        /* rx pin initialize */
-        GPIO_InitStruct.Pin = config->rx_pin;
-        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
-        HAL_GPIO_Init(config->rx_port, &GPIO_InitStruct);
-
-        /* enable the remapping of usart alternate */
-        if (uart_is_remap)
-        {
-            __HAL_RCC_AFIO_CLK_ENABLE();
-            switch (uart_num)
-            {
-            case 1:
-                __HAL_AFIO_REMAP_USART1_ENABLE();
-                break;
-            case 2:
-                __HAL_AFIO_REMAP_USART2_ENABLE();
-                break;
+       /* enable the remapping of usart alternate */
+       if (uart_is_remap)
+       {
+           __HAL_RCC_AFIO_CLK_ENABLE();
+           switch (uart_num)
+           {
+           case 1:
+               __HAL_AFIO_REMAP_USART1_ENABLE();
+               break;
+           case 2:
+               __HAL_AFIO_REMAP_USART2_ENABLE();
+               break;
             case 3:
                 if (uart_remaps[tx_index].normal_uart < 0)
+                {
+#ifdef AFIO_MAPR_USART3_REMAP_FULLREMAP
                     __HAL_AFIO_REMAP_USART3_ENABLE();
+#endif
+                }
                 else
+                {
+#ifdef AFIO_MAPR_USART3_REMAP_PARTIALREMAP
                     __HAL_AFIO_REMAP_USART3_PARTIAL();
+#endif
+                    }
                 break;
-            default:
-                RT_ASSERT(0);
-            }
-        }
-    }
+           default:
+               RT_ASSERT(0);
+           }
+       }
+   }
 
-    return RT_EOK;
+   return RT_EOK;
 }
 
 static struct stm32_uart uart_obj[sizeof(uart_config) / sizeof(uart_config[0])] = {0};

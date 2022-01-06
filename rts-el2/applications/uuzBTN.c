@@ -1,7 +1,7 @@
 #include "uuzBTN.h"
-#include <agile_button.h>
-#include "uuzUI.h"
 #include "uuzINIT.h"
+#include <agile_button.h>
+#include <uuzUI.h>
 
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "BTN "
@@ -33,8 +33,7 @@ static void btn_click_event_cb(agile_btn_t* btn)
 //长按判断，每隔1秒触发1次
 static void btn_hold_event_cb(agile_btn_t* btn)
 {
-    //LOG_I("[click] pin:%d state:%d repeat:%d, hold_time:%d", btn->pin + 100, btn->state, btn->repeat_cnt,
-    //btn->hold_time);
+    //LOG_I("[click] pin:%d state:%d repeat:%d, hold_time:%d", btn->pin + 100, btn->state, btn->repeat_cnt, btn->hold_time);
 
     //长按超过1秒表示有按键
     if (btn->hold_time > _BTN_LONG_INTERVAL) {

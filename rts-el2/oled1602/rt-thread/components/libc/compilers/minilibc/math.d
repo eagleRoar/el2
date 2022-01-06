@@ -1,8 +1,8 @@
 rt-thread/components/libc/compilers/minilibc/math.o: \
  ../rt-thread/components/libc/compilers/minilibc/math.c \
- D:\4.Workspace\rts-el2\rtconfig_preinc.h \
- D:\4.Workspace\rts-el2\rt-thread\components\libc\compilers\minilibc/math.h
+ D:\3.Workspace\el2-release\rtconfig_preinc.h \
+ D:\3.Workspace\el2-release\rt-thread\components\libc\compilers\minilibc/math.h
 
-D:\4.Workspace\rts-el2\rtconfig_preinc.h:
+D:\3.Workspace\el2-release\rtconfig_preinc.h:
 
-D:\4.Workspace\rts-el2\rt-thread\components\libc\compilers\minilibc/math.h:
+D:\3.Workspace\el2-release\rt-thread\components\libc\compilers\minilibc/math.h:

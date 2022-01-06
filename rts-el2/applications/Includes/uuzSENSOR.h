@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-u16  uuz_vAdcVoltage_Get(const u16 * SensorData, s16 count);
-void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t * sensor);
+u16 uuz_vAdcVoltage_Get(const u16 * SensorData, s16 count);
+void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t * sensor, u16 size);
 
 #ifdef __cplusplus
 }

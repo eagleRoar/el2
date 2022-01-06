@@ -9,12 +9,11 @@
  */
 
 #include "board.h"
-#include <rtthread.h>
-#include <rtdevice.h>
+#include<rtthread.h>
+#include<rtdevice.h>
 
 #ifdef BSP_USING_ONCHIP_RTC
 
-//#define BSP_RTC_USING_LSI
 #if 0
 #ifndef HAL_RTCEx_BKUPRead
 #define HAL_RTCEx_BKUPRead(x1, x2) (~BKUP_REG_DATA)
@@ -28,7 +27,7 @@
 #else
 #include "stm32f1xx_hal_rtc_ex.h"
 #endif
-#define DRV_DEBUG
+//#define DRV_DEBUG
 #define LOG_TAG             "drv.rtc"
 #include <drv_log.h>
 
@@ -41,9 +40,9 @@ RTC_HandleTypeDef RTC_Handler;
 static time_t get_rtc_timestamp(void)
 {
     RTC_TimeTypeDef RTC_TimeStruct =
-            { 0 };
+        { 0 };
     RTC_DateTypeDef RTC_DateStruct =
-            { 0 };
+        { 0 };
     struct tm tm_new;
 
     HAL_RTC_GetTime(&RTC_Handler, &RTC_TimeStruct, RTC_FORMAT_BIN);
@@ -56,16 +55,16 @@ static time_t get_rtc_timestamp(void)
     tm_new.tm_mon = RTC_DateStruct.Month - 1;
     tm_new.tm_year = RTC_DateStruct.Year + 100;
 
-    //LOG_D("get rtc time.");
+    LOG_D("get rtc time.");
     return mktime(&tm_new);
 }
 
 static rt_err_t set_rtc_time_stamp(time_t time_stamp)
 {
     RTC_TimeTypeDef RTC_TimeStruct =
-            { 0 };
+        { 0 };
     RTC_DateTypeDef RTC_DateStruct =
-            { 0 };
+        { 0 };
     struct tm *p_tm;
 
     p_tm = localtime(&time_stamp);
@@ -102,11 +101,11 @@ static void rt_rtc_init(void)
 {
 #ifndef SOC_SERIES_STM32H7
     __HAL_RCC_PWR_CLK_ENABLE()
-                ;
+    ;
 #endif
 
     RCC_OscInitTypeDef RCC_OscInitStruct =
-            { 0 };
+        { 0 };
 #ifdef BSP_RTC_USING_LSI
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
@@ -124,7 +123,7 @@ static void rt_rtc_init(void)
 static rt_err_t rt_rtc_config(struct rt_device *dev)
 {
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct =
-            { 0 };
+        { 0 };
 
     HAL_PWR_EnableBkUpAccess();
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
@@ -136,13 +135,11 @@ static rt_err_t rt_rtc_config(struct rt_device *dev)
     HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
     /* Enable BKP CLK enable for backup registers */
     __HAL_RCC_BKP_CLK_ENABLE()
-                ;
+    ;
     /* Enable RTC Clock */
     __HAL_RCC_RTC_ENABLE();
 
     RTC_Handler.Instance = RTC;
-    LOG_I("DR1=0x%X", HAL_RTCEx_BKUPRead(&RTC_Handler, RTC_BKP_DR1));
-
     if (HAL_RTCEx_BKUPRead(&RTC_Handler, RTC_BKP_DR1) != BKUP_REG_DATA) {
         LOG_I("RTC hasn't been configured, please use <date> command to config.");
 
@@ -183,7 +180,8 @@ static rt_err_t rt_rtc_config(struct rt_device *dev)
             return -RT_ERROR;
         }
     } else {
-        RTC_DateTypeDef DateToUpdate = { 0 };
+        RTC_DateTypeDef DateToUpdate =
+            { 0 };
         DateToUpdate.Year = HAL_RTCEx_BKUPRead(&RTC_Handler, RTC_BKP_DR10);
         DateToUpdate.Month = HAL_RTCEx_BKUPRead(&RTC_Handler, RTC_BKP_DR11);
         DateToUpdate.Date = HAL_RTCEx_BKUPRead(&RTC_Handler, RTC_BKP_DR12);
@@ -192,7 +190,6 @@ static rt_err_t rt_rtc_config(struct rt_device *dev)
             Error_Handler();
         }
     }
-
     return RT_EOK;
 }
 
@@ -203,16 +200,16 @@ static rt_err_t rt_rtc_config(struct rt_device *dev)
 void rt_rtc_bkp_update(void)
 {
     RTC_DateTypeDef RTC_DateStruct =
-            { 0 };
+        { 0 };
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct =
-            { 0 };
+        { 0 };
 
     HAL_PWR_EnableBkUpAccess();
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
     __HAL_RCC_BKP_CLK_ENABLE()
-                ;
+    ;
 
     HAL_RTC_GetDate(&RTC_Handler, &RTC_DateStruct, RTC_FORMAT_BIN);
 }
@@ -225,7 +222,7 @@ static rt_err_t rt_rtc_control(rt_device_t dev, int cmd, void *args)
     {
         case RT_DEVICE_CTRL_RTC_GET_TIME:
             *(rt_uint32_t *) args = get_rtc_timestamp();
-            //LOG_D("RTC: get rtc_time %x\n", *(rt_uint32_t * )args);
+            LOG_D("RTC: get rtc_time %x\n", *(rt_uint32_t * )args);
             break;
 
         case RT_DEVICE_CTRL_RTC_SET_TIME:

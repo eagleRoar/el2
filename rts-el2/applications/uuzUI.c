@@ -1,12 +1,12 @@
 ﻿/* Includes ------------------------------------------------------------------*/
 #include <rtthread.h>
+#include <uuzUI.h>
 #include "string.h"
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
 #include "agile_button.h"
 /* -------------------------------------------------------------------------------*/
 #include "uuzINIT.h"
-#include "uuzUI.h"
 #include "typedefDEF.h"
 #include "uuzBTN.h"
 /* -------------------------------------------------------------------------------*/
@@ -14,7 +14,6 @@
 #include "uuzDAC.h"
 /* -------------------------------------------------------------------------------*/
 #include "typedefUI.h"
-#include "uuzUI.h"
 #include "uuzConfigLIGHT.h"
 /* -------------------------------------------------------------------------------*/
 
@@ -175,26 +174,29 @@ u16 watt_get(u16 level, u8 mode)
 /**
  * @brief 获取灯光相关缓存信息
  * @param ch
- * @param type
+ * @param type：0-刷新初始数据；1-只刷新瓦数
  * @return
  */
 u16 level_state_get(u16 ch, u8 type)
 {
     u16 watt = 0;
 
-    //type:0-读取实时数据;1-更新修改数据
     if (ch == _CHANNEL_1 || ch == _CHANNEL_2) {
+        //NOTE:type:0-刷新灯光数据；1-只刷新瓦数
         if (type == 0) {
             xCache.level_M[ch] = get_data(_D_LT, _L_CH1_OUTPUT_MODE + _CH_LVL(ch));
             xCache.level_D[ch] = get_data(_D_LT, _L_CH1_DISPLAY_MODE + _CH_LVL(ch));
-            //获取设备当前值
-            if (xSta[_S_CH1_DAC_OPT + _CH_DIS(ch)] == 1) {
+            //NOTE:获取设备当前状态
+            if (xSta[_S_CH1_DAC_STA + _CH_DIS(ch)] == 1) {
+                //NOTE:在工作状态，可以手动调节临时参数,离开LIGHT界面后，会恢复成原来灯光状态
                 xCache.level_L[ch] = dac_to_level(ch, xSta[_S_CH1_DAC_ADC + _CH_DIS(ch)]);
             } else {
+                //NOTE:非工作状态，可以手动开启灯光参数，离开LIGHT界面后，会关闭灯光
                 xCache.level_L[ch] = 100;
             }
         }
-        //获取瓦数
+
+        //NOTE:获取瓦数
         xCache.level_W[ch] = watt_get(xCache.level_L[ch], xCache.level_D[ch]);
         //LOG_I("CH[%d]--M:%d-D:%d-L:%d-W:%d", ch, xCache.level_M[ch], xCache.level_D[ch], xCache.level_L[ch],
         //             xCache.level_W[ch]);

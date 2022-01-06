@@ -16,8 +16,6 @@ RM := rm -rf
 -include rt-thread/components/drivers/serial/subdir.mk
 -include rt-thread/components/drivers/rtc/subdir.mk
 -include rt-thread/components/drivers/misc/subdir.mk
--include rt-thread/components/dfs/src/subdir.mk
--include rt-thread/components/dfs/filesystems/devfs/subdir.mk
 -include packages/agile_button-latest/src/subdir.mk
 -include packages/LedBlink-latest/subdir.mk
 -include libraries/STM32F1xx_HAL_Driver/Src/Legacy/subdir.mk
@@ -50,7 +48,7 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 SECONDARY_FLASH += \
-rtthread.bin \
+rtthread.hex \
 
 SECONDARY_SIZE += \
 rtthread.siz \
@@ -61,10 +59,10 @@ all: rtthread.elf secondary-outputs
 
 # 工具调用
 rtthread.elf: $(OBJS) $(USER_OBJS)
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -T "D:\4.Workspace\rts-el2\link.lds" -Xlinker --gc-sections -Wl,-Map,"rtthread.map" -Xlinker --cref -o "rtthread.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -T "D:\3.Workspace\el2-release\linkscripts\STM32F103RC\link.lds" -Xlinker --gc-sections -Wl,-Map,"rtthread.map" -Xlinker --cref -o "rtthread.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 
-rtthread.bin: rtthread.elf
-	arm-none-eabi-objcopy -O binary "rtthread.elf"  "rtthread.bin"
+rtthread.hex: rtthread.elf
+	arm-none-eabi-objcopy -O ihex "rtthread.elf"  "rtthread.hex"
 
 rtthread.siz: rtthread.elf
 	arm-none-eabi-size --format=berkeley "rtthread.elf"

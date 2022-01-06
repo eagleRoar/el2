@@ -22,19 +22,19 @@
 #include <drv_log.h>
 
 static ADC_HandleTypeDef adc_config[] =
-    {
+{
 #ifdef BSP_USING_ADC1
-            ADC1_CONFIG,
+    ADC1_CONFIG,
 #endif
 
 #ifdef BSP_USING_ADC2
-            ADC2_CONFIG,
+    ADC2_CONFIG,
 #endif
 
 #ifdef BSP_USING_ADC3
-        ADC3_CONFIG,
+    ADC3_CONFIG,
 #endif
-    };
+};
 
 struct stm32_adc
 {
@@ -50,13 +50,16 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
     RT_ASSERT(device != RT_NULL);
     stm32_adc_handler = device->parent.user_data;
 
-    if (enabled) {
+    if (enabled)
+    {
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0)
         ADC_Enable(stm32_adc_handler);
 #else
         __HAL_ADC_ENABLE(stm32_adc_handler);
 #endif
-    } else {
+    }
+    else
+    {
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0)
         ADC_Disable(stm32_adc_handler);
 #else
@@ -73,71 +76,71 @@ static rt_uint32_t stm32_adc_get_channel(rt_uint32_t channel)
 
     switch (channel)
     {
-        case 0:
-            stm32_channel = ADC_CHANNEL_0;
-            break;
-        case 1:
-            stm32_channel = ADC_CHANNEL_1;
-            break;
-        case 2:
-            stm32_channel = ADC_CHANNEL_2;
-            break;
-        case 3:
-            stm32_channel = ADC_CHANNEL_3;
-            break;
-        case 4:
-            stm32_channel = ADC_CHANNEL_4;
-            break;
-        case 5:
-            stm32_channel = ADC_CHANNEL_5;
-            break;
-        case 6:
-            stm32_channel = ADC_CHANNEL_6;
-            break;
-        case 7:
-            stm32_channel = ADC_CHANNEL_7;
-            break;
-        case 8:
-            stm32_channel = ADC_CHANNEL_8;
-            break;
-        case 9:
-            stm32_channel = ADC_CHANNEL_9;
-            break;
-        case 10:
-            stm32_channel = ADC_CHANNEL_10;
-            break;
-        case 11:
-            stm32_channel = ADC_CHANNEL_11;
-            break;
-        case 12:
-            stm32_channel = ADC_CHANNEL_12;
-            break;
-        case 13:
-            stm32_channel = ADC_CHANNEL_13;
-            break;
-        case 14:
-            stm32_channel = ADC_CHANNEL_14;
-            break;
-        case 15:
-            stm32_channel = ADC_CHANNEL_15;
-            break;
+    case  0:
+        stm32_channel = ADC_CHANNEL_0;
+        break;
+    case  1:
+        stm32_channel = ADC_CHANNEL_1;
+        break;
+    case  2:
+        stm32_channel = ADC_CHANNEL_2;
+        break;
+    case  3:
+        stm32_channel = ADC_CHANNEL_3;
+        break;
+    case  4:
+        stm32_channel = ADC_CHANNEL_4;
+        break;
+    case  5:
+        stm32_channel = ADC_CHANNEL_5;
+        break;
+    case  6:
+        stm32_channel = ADC_CHANNEL_6;
+        break;
+    case  7:
+        stm32_channel = ADC_CHANNEL_7;
+        break;
+    case  8:
+        stm32_channel = ADC_CHANNEL_8;
+        break;
+    case  9:
+        stm32_channel = ADC_CHANNEL_9;
+        break;
+    case 10:
+        stm32_channel = ADC_CHANNEL_10;
+        break;
+    case 11:
+        stm32_channel = ADC_CHANNEL_11;
+        break;
+    case 12:
+        stm32_channel = ADC_CHANNEL_12;
+        break;
+    case 13:
+        stm32_channel = ADC_CHANNEL_13;
+        break;
+    case 14:
+        stm32_channel = ADC_CHANNEL_14;
+        break;
+    case 15:
+        stm32_channel = ADC_CHANNEL_15;
+        break;
 #ifdef ADC_CHANNEL_16
-        case 16:
-            stm32_channel = ADC_CHANNEL_16;
-            break;
+    case 16:
+        stm32_channel = ADC_CHANNEL_16;
+        break;
 #endif
-        case 17:
-            stm32_channel = ADC_CHANNEL_17;
-            break;
+    case 17:
+        stm32_channel = ADC_CHANNEL_17;
+        break;
 #ifdef ADC_CHANNEL_18
-            case 18:
-            stm32_channel = ADC_CHANNEL_18;
-            break;
+    case 18:
+        stm32_channel = ADC_CHANNEL_18;
+        break;
 #endif
 #ifdef ADC_CHANNEL_19
-            case 19:
-            stm32_channel = ADC_CHANNEL_19;
-            break;
+    case 19:
+        stm32_channel = ADC_CHANNEL_19;
+        break;
 #endif
     }
 
@@ -164,20 +167,22 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     }
 #endif
 
-    /* ADC channel number is up to 17 */
+/* ADC channel number is up to 17 */
 #if !defined(ADC_CHANNEL_18)
     if (channel <= 17)
-    /* ADC channel number is up to 19 */
+/* ADC channel number is up to 19 */
 #elif defined(ADC_CHANNEL_19)
-            if (channel <= 19)
-            /* ADC channel number is up to 18 */
+    if (channel <= 19)
+/* ADC channel number is up to 18 */
 #else
-            if (channel <= 18)
+    if (channel <= 18)
 #endif
-            {
+    {
         /* set stm32 ADC channel */
-        ADC_ChanConf.Channel = stm32_adc_get_channel(channel);
-    } else {
+        ADC_ChanConf.Channel =  stm32_adc_get_channel(channel);
+    }
+    else
+    {
 #if !defined(ADC_CHANNEL_18)
         LOG_E("ADC channel must be between 0 and 17.");
 #elif defined(ADC_CHANNEL_19)
@@ -213,33 +218,38 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     HAL_ADC_PollForConversion(stm32_adc_handler, 100);
 
     /* get ADC value */
-    *value = (rt_uint32_t) HAL_ADC_GetValue(stm32_adc_handler);
+    *value = (rt_uint32_t)HAL_ADC_GetValue(stm32_adc_handler);
 
     return RT_EOK;
 }
 
 static const struct rt_adc_ops stm_adc_ops =
-    { .enabled = stm32_adc_enabled, .convert = stm32_get_adc_value, };
+{
+    .enabled = stm32_adc_enabled,
+    .convert = stm32_get_adc_value,
+};
 
 static int stm32_adc_init(void)
 {
     int result = RT_EOK;
     /* save adc name */
-    char name_buf[5] =
-        { 'a', 'd', 'c', '0', 0 };
+    char name_buf[5] = {'a', 'd', 'c', '0', 0};
     int i = 0;
 
-    for (i = 0; i < sizeof(adc_config) / sizeof(adc_config[0]); i++) {
+    for (i = 0; i < sizeof(adc_config) / sizeof(adc_config[0]); i++)
+    {
         /* ADC init */
         name_buf[3] = '0';
         stm32_adc_obj[i].ADC_Handler = adc_config[i];
 #if defined(ADC1)
-        if (stm32_adc_obj[i].ADC_Handler.Instance == ADC1) {
+        if (stm32_adc_obj[i].ADC_Handler.Instance == ADC1)
+        {
             name_buf[3] = '1';
         }
 #endif
 #if defined(ADC2)
-        if (stm32_adc_obj[i].ADC_Handler.Instance == ADC2) {
+        if (stm32_adc_obj[i].ADC_Handler.Instance == ADC2)
+        {
             name_buf[3] = '2';
         }
 #endif
@@ -249,15 +259,20 @@ static int stm32_adc_init(void)
             name_buf[3] = '3';
         }
 #endif
-        if (HAL_ADC_Init(&stm32_adc_obj[i].ADC_Handler) != HAL_OK) {
+        if (HAL_ADC_Init(&stm32_adc_obj[i].ADC_Handler) != HAL_OK)
+        {
             LOG_E("%s init failed", name_buf);
             result = -RT_ERROR;
-        } else {
+        }
+        else
+        {
             /* register ADC device */
-            if (rt_hw_adc_register(&stm32_adc_obj[i].stm32_adc_device, name_buf, &stm_adc_ops,
-                    &stm32_adc_obj[i].ADC_Handler) == RT_EOK) {
+            if (rt_hw_adc_register(&stm32_adc_obj[i].stm32_adc_device, name_buf, &stm_adc_ops, &stm32_adc_obj[i].ADC_Handler) == RT_EOK)
+            {
                 LOG_D("%s init success", name_buf);
-            } else {
+            }
+            else
+            {
                 LOG_E("%s register failed", name_buf);
                 result = -RT_ERROR;
             }

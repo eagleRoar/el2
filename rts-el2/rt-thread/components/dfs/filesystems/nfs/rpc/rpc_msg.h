@@ -32,7 +32,7 @@
  * Sun has been advised of the possibility of such damages.
  *
  * Sun Microsystems, Inc.
- * 65535 Garcia Avenue
+ * 2550 Garcia Avenue
  * Mountain View, California  94043
  */
 /*      @(#)rpc_msg.h 1.7 86/07/16 SMI      */

@@ -1,21 +1,23 @@
 ﻿/* Includes ------------------------------------------------------------------*/
-#include <rtthread.h>
 #include "string.h"
+#include <rtthread.h>
+#include <uuzUI.h>
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzINIT.h"
 #include "typedefDEF.h"
+#include "uuzINIT.h"
 /* -------------------------------------------------------------------------------*/
 #include "uuzBTN.h"
 #include "uuzRTC.h"
 #include "uuzTEMP.h"
+#include "uuzLIGHT.h"
+#include "uuzConfigLIGHT.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
+#include "uuzConfig1602.h"
 #include "uuzOLED_1602.h"
 #include "uuzUI_1602.h"
-#include "uuzConfig1602.h"
 #include "uuzUI_Cache.h"
 /* -------------------------------------------------------------------------------*/
 #define DBG_ENABLE
@@ -64,8 +66,7 @@ void channel_disp(void)
 
 void channel_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             if (xUI.cFoucs < (xUI.maxFoucs - 1)) {
                 //关闭闪烁
@@ -99,8 +100,7 @@ void channel_opt(u16 keyId)
             }
             break;
         case _key_enter:
-            switch (xUI.cFoucs)
-            {
+            switch (xUI.cFoucs) {
                 case 0x00:
                     show_ui(uuzUI_OUTPUT_MODE);
                     break;
@@ -196,8 +196,7 @@ void ch2_mode_disp(void)
 
 void ch2_mode_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             if (xUI.cFoucs == (xUI.maxFoucs - 1)) {
                 xUI.cFoucs = 0;
@@ -292,8 +291,7 @@ void output_mode_disp(void)
 
 void output_mode_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             xUI.blink = 0;
             if (foucs_move_cycle(keyId)) {
@@ -338,7 +336,7 @@ void output_mode_opt(u16 keyId)
     }
 }
 /* -----------------CHANNEL-1/2 SETUP OUTPUT LEVEL----------------------*/
-Value_Typedef_t xLevelOpt;          //光标位
+Value_Typedef_t xLevelOpt;  //光标位
 void output_level_init(void)
 {
     if (xInit._output_level == 0) {
@@ -349,7 +347,7 @@ void output_level_init(void)
         xLevelOpt.h = 1;
         xLevelOpt.w = 1;
         xLevelOpt.cmd[0] = '%';
-        xLevelOpt.cmd[1] = ' ';          //解决显示位数3位到4位的问题
+        xLevelOpt.cmd[1] = ' ';  //解决显示位数3位到4位的问题
         xInit._output_level = 1;
     }
 }
@@ -384,11 +382,10 @@ void output_level_disp(void)
 
 void output_level_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             case _key_l_down:
-            if (xLevelOpt.val > 50) {
+            if (xLevelOpt.val > _LIGHT_MIN) {
                 xUI.blink = 0;
                 xLevelOpt.val--;
                 disp_value(_OLED_, &xLevelOpt, NULL);
@@ -397,7 +394,7 @@ void output_level_opt(u16 keyId)
             break;
         case _key_up:
             case _key_l_up:
-            if (xLevelOpt.val < 115) {
+            if (xLevelOpt.val < _LIGHT_MAX) {
                 xUI.blink = 0;
                 xLevelOpt.val++;
                 disp_value(_OLED_, &xLevelOpt, NULL);
@@ -406,11 +403,14 @@ void output_level_opt(u16 keyId)
             break;
         case _key_enter:
             //在工作范围内
-            if ((xLevelOpt.val >= 50) && (xLevelOpt.val <= 115)) {
+            if ((xLevelOpt.val >= _LIGHT_MIN) && (xLevelOpt.val <= _LIGHT_MAX)) {
                 xUI.blink = 0;
                 set_data(_D_LT, _L_CH1_OUTPUT_LEVEL + _CH_LVL(xCache.channel), xLevelOpt.val);
                 //保存相关数据
                 save_data();
+                if (xSta[_S_CH1_RS_STA + _CH_DIS(xCache.channel)] != uuzLTS_NULL) {        //当前处于日升日落状态
+                    uuz_vLightSunRiseSet_Complete(xCache.channel);        //退出日升日落状态
+                }
                 //返回上一页
                 show_ui(xUI.cID / 10);
                 xUI.blink = 1;
@@ -424,7 +424,7 @@ void output_level_opt(u16 keyId)
     }
 }
 /* -----------------CHANNEL-1/2 SETUP LIGHT CYCLE----------------------*/
-Value_Typedef_t xTimeSet[4];          //开始时间HH:MM-结束时间HH:MM
+Value_Typedef_t xTimeSet[6];  //开始时间HH:MM-结束时间HH:MM
 void light_cycle_init(void)
 {
     u8 ucIndex = 0;
@@ -435,7 +435,15 @@ void light_cycle_init(void)
             xTimeSet[ucIndex].foucs = ucIndex;
             xTimeSet[ucIndex].h = ucIndex / 2;
             xTimeSet[ucIndex].w = (ucIndex % 2) * 3 + 8;
-            xTimeSet[ucIndex].cmd[0] = '\0';    //NULL
+            xTimeSet[ucIndex].cmd[0] = '\0';  //NULL
+        }
+        for (ucIndex = 4; ucIndex < 6; ucIndex++) {
+            xTimeSet[ucIndex].val = 0;
+            xTimeSet[ucIndex].blink = 0;
+            xTimeSet[ucIndex].foucs = ucIndex;
+            xTimeSet[ucIndex].h = ucIndex % 2;
+            xTimeSet[ucIndex].w = 13;
+            xTimeSet[ucIndex].cmd[0] = ' ';  //SPACE
         }
         xInit._light_cycle = 1;
     }
@@ -456,14 +464,18 @@ void light_cycle_disp(void)
         if (xSysConfig.Sys[_D_TIME_FORMAT] == _TYPE_12HOUR) {
             //显示尾标A/P
             if ((xCache.timeCH[0] / 60) < 12) {
-                xTimeSet[1].cmd[0] = 'A';
+                xTimeSet[4].cmd[0] = 'A';
+                xTimeSet[4].val = 0;
             } else {
-                xTimeSet[1].cmd[0] = 'P';
+                xTimeSet[4].cmd[0] = 'P';
+                xTimeSet[4].val = 1;
             }
             if ((xCache.timeCH[1] / 60) < 12) {
-                xTimeSet[3].cmd[0] = 'A';
+                xTimeSet[5].cmd[0] = 'A';
+                xTimeSet[5].val = 0;
             } else {
-                xTimeSet[3].cmd[0] = 'P';
+                xTimeSet[5].cmd[0] = 'P';
+                xTimeSet[5].val = 1;
             }
             //加载数据
             xTimeSet[0].val = (xCache.timeCH[0] / 60) % 12;
@@ -471,14 +483,14 @@ void light_cycle_disp(void)
             xTimeSet[2].val = (xCache.timeCH[1] / 60) % 12;
             xTimeSet[3].val = (xCache.timeCH[1] % 60);
         } else {
-            //显示尾标为空
-            xTimeSet[1].cmd[0] = ' ';
-            xTimeSet[3].cmd[0] = ' ';
             //加载数据
             xTimeSet[0].val = (xCache.timeCH[0] / 60);
             xTimeSet[1].val = (xCache.timeCH[0] % 60);
             xTimeSet[2].val = (xCache.timeCH[1] / 60);
             xTimeSet[3].val = (xCache.timeCH[1] % 60);
+            //显示尾标为空
+            xTimeSet[4].cmd[0] = ' ';
+            xTimeSet[5].cmd[0] = ' ';
         }
         // 清空OLED屏幕
         clear_screen(_SYNC_A);
@@ -491,8 +503,9 @@ void light_cycle_disp(void)
         light_cycle_value_disp(_OLED_, 5);
         //填充数据
         light_cycle_value_disp(_OLED_, 4);
-        //刷新OLED屏幕数据
-        //sync_oled(_SYNC_A);
+        //刷新尾标(A/P)
+        drawToOLED(xTimeSet[4].h, xTimeSet[4].w, xTimeSet[4].cmd, 1);
+        drawToOLED(xTimeSet[5].h, xTimeSet[5].w, xTimeSet[5].cmd, 1);
         xUI.delay = 0;
         xUI.blink = 1;
     } else {
@@ -505,49 +518,56 @@ void light_cycle_disp(void)
 
 void light_cycle_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_up:
             case _key_l_up:
             xUI.blink = 0;
             xUI.delay = 0;
             if (xUI.cFoucs == 0) {
-                if (xCache.timeCH[xUI.cFoucs / 2] >= 23 * 60) {
-                    xCache.timeCH[xUI.cFoucs / 2] -= (23 * 60);
+                //CYCLE-ON-TIME-HOUR
+                if (xCache.timeCH[0] >= 23 * 60) {
+                    xCache.timeCH[0] -= (23 * 60);
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2] += 60;
+                    xCache.timeCH[0] += 60;
                 }
             } else if (xUI.cFoucs == 1) {
-                if ((xCache.timeCH[xUI.cFoucs / 2] % 60) == 59) {
-                    xCache.timeCH[xUI.cFoucs / 2] -= 59;
+                //CYCLE-ON-TIME-MIN
+                if ((xCache.timeCH[0] % 60) == 59) {
+                    xCache.timeCH[0] -= 59;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2]++;
+                    xCache.timeCH[0]++;
                 }
             } else if (xUI.cFoucs == 2) {
-                if (xCache.timeCH[xUI.cFoucs / 2] >= 23 * 60) {
-                    xCache.timeCH[xUI.cFoucs / 2] -= (23 * 60);
+                //CYCLE-OFF-TIME-HOUR
+                if (xCache.timeCH[1] >= 23 * 60) {
+                    xCache.timeCH[1] -= (23 * 60);
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2] += 60;
+                    xCache.timeCH[1] += 60;
                 }
             } else if (xUI.cFoucs == 3) {
-                if ((xCache.timeCH[xUI.cFoucs / 2] % 60) == 59) {
-                    xCache.timeCH[xUI.cFoucs / 2] -= 59;
+                //CYCLE-OFF-TIME-MIN
+                if ((xCache.timeCH[1] % 60) == 59) {
+                    xCache.timeCH[1] -= 59;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2]++;
+                    xCache.timeCH[1]++;
                 }
             }
             //显示时制
             if (xSysConfig.Sys[_D_TIME_FORMAT] == _TYPE_12HOUR) {
                 //显示尾标A/P
                 if ((xCache.timeCH[0] / 60) < 12) {
-                    xTimeSet[1].cmd[0] = 'A';
+                    xTimeSet[4].cmd[0] = 'A';
+                    xTimeSet[4].val = 0;
                 } else {
-                    xTimeSet[1].cmd[0] = 'P';
+                    xTimeSet[4].cmd[0] = 'P';
+                    xTimeSet[4].val = 1;
                 }
                 if ((xCache.timeCH[1] / 60) < 12) {
-                    xTimeSet[3].cmd[0] = 'A';
+                    xTimeSet[5].cmd[0] = 'A';
+                    xTimeSet[5].val = 0;
                 } else {
-                    xTimeSet[3].cmd[0] = 'P';
+                    xTimeSet[5].cmd[0] = 'P';
+                    xTimeSet[5].val = 1;
                 }
                 //加载数据
                 xTimeSet[0].val = (xCache.timeCH[0] / 60) % 12;
@@ -556,57 +576,69 @@ void light_cycle_opt(u16 keyId)
                 xTimeSet[3].val = (xCache.timeCH[1] % 60);
             } else {
                 //显示尾标为空
-                xTimeSet[1].cmd[0] = ' ';
-                xTimeSet[3].cmd[0] = ' ';
+                xTimeSet[4].cmd[0] = ' ';
+                xTimeSet[5].cmd[0] = ' ';
                 //加载数据
                 xTimeSet[0].val = (xCache.timeCH[0] / 60);
                 xTimeSet[1].val = (xCache.timeCH[0] % 60);
                 xTimeSet[2].val = (xCache.timeCH[1] / 60);
                 xTimeSet[3].val = (xCache.timeCH[1] % 60);
             }
+            //刷新单个数据
             disp_time(_OLED_, &xTimeSet[xUI.cFoucs]);
+            //刷新尾标(A/P)
+            if (xUI.cFoucs < 2) {
+                drawToOLED(xTimeSet[4].h, xTimeSet[4].w, xTimeSet[4].cmd, 1);
+            } else if (xUI.cFoucs < 4) {
+                drawToOLED(xTimeSet[5].h, xTimeSet[5].w, xTimeSet[5].cmd, 1);
+            }
             xUI.blink = 1;
             break;
         case _key_down:
             case _key_l_down:
             xUI.blink = 0;
+            xUI.delay = 0;
             if (xUI.cFoucs == 0) {
-                if (xCache.timeCH[xUI.cFoucs / 2] < 60) {
-                    xCache.timeCH[xUI.cFoucs / 2] += 23 * 60;
+                if (xCache.timeCH[0] < 60) {
+                    xCache.timeCH[0] += 23 * 60;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2] -= 60;
+                    xCache.timeCH[0] -= 60;
                 }
             } else if (xUI.cFoucs == 1) {
-                if ((xCache.timeCH[xUI.cFoucs / 2] % 60) == 0) {
-                    xCache.timeCH[xUI.cFoucs / 2] += 59;
+                if ((xCache.timeCH[0] % 60) == 0) {
+                    xCache.timeCH[0] += 59;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2]--;
+                    xCache.timeCH[0]--;
                 }
             } else if (xUI.cFoucs == 2) {
-                if (xCache.timeCH[xUI.cFoucs / 2] < 60) {
-                    xCache.timeCH[xUI.cFoucs / 2] += 23 * 60;
+                if (xCache.timeCH[1] < 60) {
+                    xCache.timeCH[1] += 23 * 60;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2] -= 60;
+                    xCache.timeCH[1] -= 60;
                 }
             } else if (xUI.cFoucs == 3) {
-                if ((xCache.timeCH[xUI.cFoucs / 2] % 60) == 0) {
-                    xCache.timeCH[xUI.cFoucs / 2] += 59;
+                if ((xCache.timeCH[1] % 60) == 0) {
+                    xCache.timeCH[1] += 59;
                 } else {
-                    xCache.timeCH[xUI.cFoucs / 2]--;
+                    xCache.timeCH[1]--;
                 }
             }
             //显示时制
             if (xSysConfig.Sys[_D_TIME_FORMAT] == _TYPE_12HOUR) {
                 //显示尾标A/P
                 if ((xCache.timeCH[0] / 60) < 12) {
-                    xTimeSet[1].cmd[0] = 'A';
+                    xTimeSet[4].cmd[0] = 'A';
+                    xTimeSet[4].val = 0;
                 } else {
-                    xTimeSet[1].cmd[0] = 'P';
+                    xTimeSet[4].cmd[0] = 'P';
+                    xTimeSet[4].val = 1;
                 }
                 if ((xCache.timeCH[1] / 60) < 12) {
-                    xTimeSet[3].cmd[0] = 'A';
+                    xTimeSet[5].cmd[0] = 'A';
+                    xTimeSet[5].val = 0;
                 } else {
-                    xTimeSet[3].cmd[0] = 'P';
+                    xTimeSet[5].cmd[0] = 'P';
+                    xTimeSet[5].val = 1;
                 }
                 //加载数据
                 xTimeSet[0].val = (xCache.timeCH[0] / 60) % 12;
@@ -615,16 +647,21 @@ void light_cycle_opt(u16 keyId)
                 xTimeSet[3].val = (xCache.timeCH[1] % 60);
             } else {
                 //显示尾标为空
-                xTimeSet[1].cmd[0] = ' ';
-                xTimeSet[3].cmd[0] = ' ';
+                xTimeSet[4].cmd[0] = ' ';
+                xTimeSet[5].cmd[0] = ' ';
                 //加载数据
                 xTimeSet[0].val = (xCache.timeCH[0] / 60);
                 xTimeSet[1].val = (xCache.timeCH[0] % 60);
                 xTimeSet[2].val = (xCache.timeCH[1] / 60);
                 xTimeSet[3].val = (xCache.timeCH[1] % 60);
             }
-            xUI.delay = 0;
             disp_time(_OLED_, &xTimeSet[xUI.cFoucs]);
+            //刷新尾标(A/P)
+            if (xUI.cFoucs < 2) {
+                drawToOLED(xTimeSet[4].h, xTimeSet[4].w, xTimeSet[4].cmd, 1);
+            } else if (xUI.cFoucs < 4) {
+                drawToOLED(xTimeSet[5].h, xTimeSet[5].w, xTimeSet[5].cmd, 1);
+            }
             xUI.blink = 1;
             break;
         case _key_enter:
@@ -643,6 +680,9 @@ void light_cycle_opt(u16 keyId)
                 set_data(_D_LT, _L_CH1_CYCLE_OFF + _CH_LVL(xCache.channel), xCache.timeCH[1]);
                 //保存相关数据
                 save_data();
+                if (xSta[_S_CH1_RS_STA + _CH_DIS(xCache.channel)] != uuzLTS_NULL) {        //当前处于日升日落状态
+                    uuz_vLightSunRiseSet_Complete(xCache.channel);        //退出日升日落状态
+                }
                 //返回上一页
                 show_ui(xUI.cID / 10);
             }
@@ -687,11 +727,11 @@ void light_cycle_value_disp(u8 type, u8 step)
     }
 }
 /* -----------------CHANNEL-1/2 SET TEMP_LEVELS----------------------*/
-Value_Typedef_t xLTa[4];        //和灯光相关温度设置信息
+Value_Typedef_t xLTa[4];  //和灯光相关温度设置信息
 void set_temp_levels_init(void)
 {
     u8 h[4] =
-            { 0, 1, 1, 1 };
+                { 0, 1, 1, 1 };
     if (xInit._set_temp_levels == 0) {
         //Night Temperature Alarm时间数据
         //Day Temperature Alarm时间数据
@@ -751,36 +791,9 @@ void set_temp_levels_disp(void)
 
 void set_temp_levels_opt(u16 keyId)
 {
-    u8 ucIndex = 0;
-    u16 _max = 0;
-    u16 _min = 0;
     u8 foucs = (xUI.cFoucs - 1) / 2;
 
-    //获取摄氏度的最大最小值
-    u16 _cmax[4] =
-            { 300, 300, 350, 500 };    //max = 30.0C
-    u16 _cmin[4] =
-            { 100, 100, 275, 300 };    //min = 10.0C
-    //获取华氏度的最大最小值
-    u16 _fmax[4];
-    u16 _fmin[4];
-
-    for (ucIndex = 0; ucIndex < 4; ucIndex++) {
-        _fmax[ucIndex] = uuz_usTempUnit_ConvCplt(_cmax[ucIndex]);
-        _fmin[ucIndex] = uuz_usTempUnit_ConvCplt(_cmin[ucIndex]);
-    }
-
-    //加载当前焦点的最大最小值
-    if (xSysConfig.Sys[_L_TEMP_UNITS] == _TYPE_F) {
-        _max = _fmax[foucs];
-        _min = _fmin[foucs];
-    } else {
-        _max = _cmax[foucs];
-        _min = _cmin[foucs];
-    }
-
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             //关闭闪烁
             xUI.blink = 0;
@@ -794,11 +807,11 @@ void set_temp_levels_opt(u16 keyId)
                 set_temp_levels_value_disp(_OLED_, xUI.maxFoucs);
             } else if ((xUI.cFoucs == 1) || (xUI.cFoucs == 3) || (xUI.cFoucs == 5) || (xUI.cFoucs == 7)) {
                 //大于最小值
-                if (xLTa[foucs].val > _min) {
+                if (xLTa[foucs].val > set_temp_limit_get(0, foucs)) {
                     xLTa[foucs].val--;
+                    //填充数据
+                    set_temp_levels_value_disp(_OLED_, foucs);
                 }
-                //填充数据
-                set_temp_levels_value_disp(_OLED_, foucs);
             }
             //启动闪烁
             xUI.blink = 1;
@@ -820,7 +833,7 @@ void set_temp_levels_opt(u16 keyId)
                 set_temp_levels_cursor_disp(_OLED_);
             } else if ((xUI.cFoucs == 1) || (xUI.cFoucs == 3) || (xUI.cFoucs == 5) || (xUI.cFoucs == 7)) {
                 //小于最大值
-                if (xLTa[foucs].val < _max) {
+                if (xLTa[foucs].val < set_temp_limit_get(1, foucs)) {
                     xLTa[foucs].val++;
                     //填充数据
                     set_temp_levels_value_disp(_OLED_, foucs);
@@ -869,6 +882,44 @@ void set_temp_levels_opt(u16 keyId)
     }
 }
 
+/**
+ * @brief 计算温度调节的上下限值
+ * @param type:0-min;1-max;
+ * @param foucs:0-1-2-3
+ * @return
+ */
+u16 set_temp_limit_get(u8 type, u16 foucs)
+{
+    u16 _Tmin = 0;
+    u16 _Tmax = 0;
+
+    //获取摄氏度的最大最小值
+    u16 _cmax[4] =
+                { 300, 300, 350, 500 };  //max = 30.0C
+    u16 _cmin[4] =
+                { 100, 100, 275, 300 };  //min = 10.0C
+    //获取华氏度的最大最小值
+    u16 _fmax[4] =
+                { 860, 860, 950, 1220 };
+    u16 _fmin[4] =
+                { 500, 500, 815, 860 };
+
+    //加载当前焦点的最大最小值
+    if (get_data(_D_LT, _L_TEMP_UNITS) == _TYPE_F) {
+        _Tmax = _fmax[foucs];
+        _Tmin = _fmin[foucs];
+    } else {
+        _Tmax = _cmax[foucs];
+        _Tmin = _cmin[foucs];
+    }
+
+    if (type == 0) {
+        return _Tmin;
+    } else {
+        return _Tmax;
+    }
+}
+
 void set_temp_levels_cursor_disp(u8 type)
 {
     if (xUI.cID == uuzUI_SET_TEMP_LEVELS) {
@@ -907,8 +958,7 @@ void set_temp_levels_title_disp(u8 type)
 {
     if (xUI.cID == uuzUI_SET_TEMP_LEVELS) {
 
-        switch (xUI.cFoucs)
-        {
+        switch (xUI.cFoucs) {
             case 0:
                 case 1:
                 case 2:
@@ -1025,8 +1075,7 @@ void sunrise_sunset_disp(void)
 
 void sunrise_sunset_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             xUI.blink = 0;
             if (xUI.cFoucs == 0) {
@@ -1092,11 +1141,17 @@ void sunrise_sunset_opt(u16 keyId)
                 set_data(_D_LT, _L_CH1_SUNRISE_DELAY + _CH_LVL(xCache.channel), xSunRise.val);
                 //保存相关数据
                 save_data();
+                if (xSta[_S_CH1_RS_STA + _CH_DIS(xCache.channel)] != uuzLTS_NULL) {        //当前处于日升日落状态
+                    uuz_vLightSunRiseSet_Complete(xCache.channel);        //退出日升日落状态
+                }
                 xUI.cFoucs = 0;
             } else if (xUI.cFoucs == 3) {
                 set_data(_D_LT, _L_CH1_SUNSET_DELAY + _CH_LVL(xCache.channel), xSunSet.val);
                 //保存相关数据
                 save_data();
+                if (xSta[_S_CH1_RS_STA + _CH_DIS(xCache.channel)] != uuzLTS_NULL) {        //当前处于日升日落状态
+                    uuz_vLightSunRiseSet_Complete(xCache.channel);        //退出日升日落状态
+                }
                 xUI.cFoucs = 2;
             }
             sunrise_sunset_cursor_disp();
@@ -1178,8 +1233,7 @@ void ecm_config_disp(void)
 
 void ecm_config_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             case _key_up:
             xUI.blink = 0;
@@ -1208,7 +1262,7 @@ void ecm_config_opt(u16 keyId)
     }
 }
 /* -----------------CHANNEL-1/2 SETUP DISPLAY MODE----------------------*/
-Value_Typedef_t xDispMode;          //光标位
+Value_Typedef_t xDispMode;  //光标位
 void display_mode_init(void)
 {
     if (xInit._display_mode == 0) {
@@ -1218,7 +1272,7 @@ void display_mode_init(void)
         xDispMode.foucs = 0;
         xDispMode.h = 1;
         xDispMode.w = 1;
-        xDispMode.cmd[0] = '\0';    //NULL
+        xDispMode.cmd[0] = '\0';  //NULL
         xInit._display_mode = 1;
     }
 }
@@ -1250,8 +1304,7 @@ void display_mode_disp(void)
 
 void display_mode_opt(u16 keyId)
 {
-    switch (keyId)
-    {
+    switch (keyId) {
         case _key_down:
             case _key_up:
             xUI.blink = 0;
@@ -1282,21 +1335,20 @@ void display_mode_value_disp(void)
 {
     char cmd[OLED_W];
     char watt[4][5] =
-            { "1000", "750 ", "600 ", "400 " };
+                { "1000", "750 ", "600 ", "400 " };
 
     if (xUI.cID == uuzUI_DISPLAY_MODE) {
         //显示选择项
-        switch (xUI.cFoucs)
-        {
-            case 0:    //100%
+        switch (xUI.cFoucs) {
+            case 0:  //100%
                 xDispMode.val = get_data(_D_LT, _L_CH1_OUTPUT_LEVEL);
                 rt_sprintf(cmd, "%03d%", xDispMode.val);
                 drawToOLED(xDispMode.h, xDispMode.w, cmd, 4);
                 break;
-            case 1:    //1000W
-            case 2:    //750W
-            case 3:    //600W
-            case 4:    //400
+            case 1:  //1000W
+            case 2:  //750W
+            case 3:  //600W
+            case 4:  //400
                 rt_memcpy(cmd, watt[xUI.cFoucs - 1], 4);
                 drawToOLED(xDispMode.h, xDispMode.w, cmd, 4);
                 break;

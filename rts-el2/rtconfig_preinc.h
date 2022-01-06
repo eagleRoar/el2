@@ -7,7 +7,5 @@
 
 #define HAVE_CCONFIG_H
 #define RT_USING_MINILIBC
-#define STM32F105xC
-#define USE_HAL_DRIVER
 
 #endif /*RTCONFIG_PREINC_H__*/

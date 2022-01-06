@@ -15,11 +15,11 @@
 
 enum
 {
-    _LD_POWER = 1,  //电源灯
-    _LD_TA1,  //通道温度报警1
-    _LD_TA2,  //通道温度报警2
-    _LD_CH1,  //通道1状态
-    _LD_CH2  //通道2状态
+    _LD_POWER = 1,    //电源灯
+    _LD_TA1,    //通道温度报警1
+    _LD_TA2,    //通道温度报警2
+    _LD_CH1,    //通道1状态
+    _LD_CH2    //通道2状态
 
 };
 
@@ -27,6 +27,7 @@ enum
 extern "C" {
 #endif
 
+void rt_led_init(void);
 int rt_led_timer_init(void);
 
 #ifdef __cplusplus

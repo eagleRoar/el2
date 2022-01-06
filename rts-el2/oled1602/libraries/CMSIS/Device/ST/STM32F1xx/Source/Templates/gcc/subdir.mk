@@ -3,17 +3,17 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
-S_SRCS += \
-../libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f105xc.s 
+S_UPPER_SRCS += \
+../libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xe.S 
 
 OBJS += \
-./libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f105xc.o 
+./libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xe.o 
 
-S_DEPS += \
-./libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f105xc.d 
+S_UPPER_DEPS += \
+./libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xe.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
-libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/%.o: ../libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/%.s
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -x assembler-with-cpp -I"D:\4.Workspace\rts-el2" -Xassembler -mimplicit-it=thumb -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -c -o "$@" "$<"
+libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/%.o: ../libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/%.S
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -x assembler-with-cpp -I"D:\3.Workspace\el2-release" -Xassembler -mimplicit-it=thumb -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -c -o "$@" "$<"
 

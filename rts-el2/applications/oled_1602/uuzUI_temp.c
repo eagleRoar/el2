@@ -1,5 +1,6 @@
 ﻿/* Includes ------------------------------------------------------------------*/
 #include <rtthread.h>
+#include <uuzUI.h>
 #include "string.h"
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
@@ -11,7 +12,6 @@
 #include "uuzRTC.h"
 #include "uuzTEMP.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
 #include "uuzOLED_1602.h"
 #include "uuzUI_1602.h"
@@ -103,7 +103,7 @@ void temp_units_opt(u16 keyId)
                         if (xUI.cFoucs == _TYPE_F) {
                             //转换配置数据为华氏度
                             set_data(_D_LT, _L_CH1_NIGHT_ALARM_TEMP + _CH_LVL(ch) + step,
-                                    uuz_usTempUnit_ConvCplt(
+                                    uuz_usTempC2F_ConvCplt(
                                             get_data(_D_LT, _L_CH1_NIGHT_ALARM_TEMP + _CH_LVL(ch) + step)));
                         } else {
                             //转换配置数据为摄氏度

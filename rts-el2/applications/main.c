@@ -8,51 +8,31 @@
  * 2019-09-09     RT-Thread    first version
  */
 
-#include <rtthread.h>
 #include <board.h>
 #include <rtdevice.h>
+#include <rtthread.h>
 #include <uuzINIT.h>
+#include <uuzUI.h>
 //----------------------------------
-#include "uuzOpt.h"
-#include "uuzLED.h"
-#include "uuzOLED.h"
-#include "uuzUI.h"
 #include "uuzADC.h"
-#include "uuzUartEvent.h"
-#include "uuzDevice.h"
-#include "uuzUart.h"
 #include "uuzBTN.h"
 #include "uuzDAC.h"
-#include "uuzRTC.h"
+#include "uuzDevice.h"
+#include "uuzLED.h"
 #include "uuzLIGHT.h"
+#include "uuzOLED.h"
+#include "uuzOpt.h"
+#include "uuzRTC.h"
+#include "uuzUart.h"
+#include "uuzUartEvent.h"
 
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
-struct rt_messagequeue mq;//Justin debug
-u8 mqPool[1024];
-
-/*
-* author: Justin
-*       : 仅仅作为消息队列测试
-*/
-void mq_init(void)
-{
-    rt_err_t ret = RT_EOK;
-    ret = rt_mq_init(&mq, "mq_test", mqPool, 1, sizeof(mqPool), RT_IPC_FLAG_FIFO);
-
-//    if(ret != RT_EOK)
-//    {
-//
-//    }
-}
-
 int main(void)
 {
     int count = 1;
-
-    mq_init();//Justin debug
 
     //初始化配置信息
     uuz_vLocalInit();
@@ -70,7 +50,6 @@ int main(void)
     ui_sync_init();
     //Light操作
     light_opt_init();
-    test();//Justin debug
     //读取PVD的时间相关数据
     pvd_sync_init();
 
@@ -96,7 +75,6 @@ int main(void)
                 //切换灯闪烁
                 led_blink(_LD_POWER, 500, 500);
             }
-
         }
 
         //每1秒更新一次BR寄存器

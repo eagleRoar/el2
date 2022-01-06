@@ -1,11 +1,16 @@
 ﻿/* Includes ------------------------------------------------------------------*/
-#include <uuzINIT.h>
+#include "uuzADC.h"
 #include "typedefDEF.h"
 #include "typedefUI.h"
-#include "uuzADC.h"
+#include "uuzConfigLight.h"
+#include "uuzDAC.h"
+#include "uuzLIGHT.h"
 #include "uuzOpt.h"
-#include "uuzTEMP.h"
 #include "uuzSENSOR.h"
+#include "uuzTEMP.h"
+#include <uuzINIT.h>
+
+#include <uuzUI.h>
 
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "ADC "
@@ -16,13 +21,17 @@
 rt_adc_device_t voltage_dev;
 rt_adc_device_t temperature_dev;
 
+rt_uint16_t voltage_in_val = 0;
+
 /**
  * @note 温度同步线程
  * @param parameter
  */
-void adc_entry(void * parameter)
+void adc_entry(void* parameter)
 {
-    Temperature_Cache_Typedef_t *xTaCache;
+    Temperature_Cache_Typedef_t* xTaCache;
+    Temperature_Cache_Typedef_t* xDacCache;
+
     u8 IsSaveLogsToFlash = 0;
     u8 cmd[8];
     u32 ulCount = 0;
@@ -47,22 +56,50 @@ void adc_entry(void * parameter)
 
         //第250ms时，采集DAC输出的ADC
         if (ulCount == 200) {
-            //读取电压的ADC数据
-            xSta[_S_CH1_DAC_ADC] = (u16) adc_read(voltage_dev, CH1_VOL_CHANNEL);
-            xSta[_S_CH2_DAC_ADC] = (u16) adc_read(voltage_dev, CH2_VOL_CHANNEL);
-            //LOG_I("CH-1:%d,CH-2:%d", xSta[_S_CH1_DAC_ADC], xSta[_S_CH2_DAC_ADC]);
+            //读取CH-1电压的ADC数据
+            xDacCache = &xDacCache[_CHANNEL_1];
+            xSta[_S_CH1_DAC_ADC] = uuz_usDacData_Get((u16) adc_read(voltage_dev, CH1_VOL_CHANNEL),
+                    &xDacData[_CHANNEL_1]);
+            xSta[_S_CH1_DAC_VAL] = dac_to_level(_CHANNEL_1, xSta[_S_CH1_DAC_ADC]);
+            xSta[_S_CH1_DAC_STA] = (xSta[_S_CH1_DAC_VAL] >= get_data(_D_LT, _L_MIN_LEVEL)) ? (uuzLTS_ON) : (uuzLTS_OFF);
+            LOG_D("DAC1:%d-VAL:%d-STA:%d", xSta[_S_CH1_DAC_ADC], xSta[_S_CH1_DAC_VAL], xSta[_S_CH1_DAC_STA]);
+
+            //读取CH-2电压的ADC数据
+            xDacCache = &xDacCache[_CHANNEL_2];
+            xSta[_S_CH2_DAC_ADC] = uuz_usDacData_Get((u16) adc_read(voltage_dev, CH2_VOL_CHANNEL),
+                    &xDacData[_CHANNEL_2]);
+            xSta[_S_CH2_DAC_VAL] = dac_to_level(_CHANNEL_2, xSta[_S_CH2_DAC_ADC]);
+            xSta[_S_CH2_DAC_STA] = (xSta[_S_CH2_DAC_VAL] >= get_data(_D_LT, _L_MIN_LEVEL)) ? (uuzLTS_ON) : (uuzLTS_OFF);
+
+#if 0
+            //每1秒更新一次灯光状态
+            if (xUI.cID = uuzUI_LIGHT) {
+                if (xSta[_S_LIGHT_MANUAL] == 0) {
+                    rt_light_event();
+                }
+            } else {
+                rt_light_event();
+            }
+#endif
         }
+
+#if 0
+        if (ulCount == 800) {
+            LOG_I("Read:xSTA[1]:%d-%d", xSta[_S_CH1_DAC_STA], xSta[_S_CH1_DAC_VAL]);
+            LOG_I("Read:xSTA[2]:%d-%d", xSta[_S_CH2_DAC_STA], xSta[_S_CH2_DAC_VAL]);
+        }
+#endif
 
         //第500ms时，采集温度对应的ADC
         if (ulCount == 400) {
             //Channel - 1
             xTaCache = &xTemperatureCache[_CHANNEL_1];
             //读取温度1数据
-            uuz_vTemperature_Get(xTaCache);
+            xSta[_S_CH1_TEMP_VAL] = uuz_vTemperature_Val_Get(xTaCache);
             //如果为华氏度显示
             if (xSysConfig.Light[_L_TEMP_UNITS] == _TYPE_F) {
                 //转换温度为华氏度
-                xSta[_S_CH1_TEMP_VAL] = uuz_usTempUnit_ConvCplt(xSta[_S_CH1_TEMP_VAL]);
+                xSta[_S_CH1_TEMP_VAL] = uuz_usTemp2Int_ConvCplt(uuz_usTempC2F_ConvCplt(xSta[_S_CH1_TEMP_VAL]));
             }
             //判断是否补偿
             xSta[_S_CH1_TEMP_VAL] = uuz_vCompensation_Get(xSta[_S_CH1_TEMP_VAL], _CHANNEL_1);
@@ -82,7 +119,7 @@ void adc_entry(void * parameter)
             //如果为华氏度显示
             if (xSysConfig.Light[_L_TEMP_UNITS] == _TYPE_F) {
                 //转换温度为华氏度
-                xSta[_S_CH2_TEMP_VAL] = uuz_usTempUnit_ConvCplt(xSta[_S_CH2_TEMP_VAL]);
+                xSta[_S_CH2_TEMP_VAL] = uuz_usTemp2Int_ConvCplt(uuz_usTempC2F_ConvCplt(xSta[_S_CH2_TEMP_VAL]));
             }
             //判断是否补偿
             xSta[_S_CH2_TEMP_VAL] = uuz_vCompensation_Get(xSta[_S_CH2_TEMP_VAL], _CHANNEL_2);
@@ -95,6 +132,7 @@ void adc_entry(void * parameter)
                 vU16ToU8(cmd + 2, xSta[_S_CH2_TEMP_H], uuzMSB);
                 set_logs(_G_CH2_TA_INFO, cmd, 4);
             }
+            voltage_in_val = adc_read(voltage_dev, VOL_IN_CHANNEL);
         }
 
         //有相关标记，保存数据
@@ -135,7 +173,7 @@ rt_uint32_t adc_read(rt_adc_device_t dev, rt_uint32_t channel)
     /* 读取采样值 */
     value = rt_adc_read(dev, channel);
 #if 0
-    if (channel == 6 || channel == 7) {
+    if (channel == 8 || channel == 9 || channel == 17) {
         LOG_D("the value[%d] is :%d", channel, value);
     }
 #endif

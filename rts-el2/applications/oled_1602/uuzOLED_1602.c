@@ -18,7 +18,7 @@ static rt_mutex_t oled_mutex = RT_NULL;
  * @brief 启动初始的间隔延时
  * @param time
  */
-void static delay(rt_uint32_t time)
+void delay(rt_uint32_t time)
 {
     rt_uint8_t ucIndex;
     //125ns
@@ -396,4 +396,27 @@ void oled_init(void)
     corsor_return();
     clear_screen(_SYNC_A);
 
+}
+
+/**
+ * @brief 重置驱动OLED
+ * @author Qiu yijie
+ * @date 2022.01.05
+ */
+void oled_reset(void)
+{
+    /*加锁*/
+    rt_mutex_take(oled_mutex, RT_WAITING_FOREVER);
+
+    //初始相关参数
+//    clear_screen(_SYNC_A);
+    font_table_set(FONT_LIB_EUR2);
+    display_mode_set(_DISPLAY_ON, _CURSOR_OFF, _BLINK_OFF);
+    address_mode_set();
+    cgram_init();
+    corsor_return();
+//    clear_screen(_SYNC_A);
+
+    /*解锁*/
+    rt_mutex_release(oled_mutex);
 }

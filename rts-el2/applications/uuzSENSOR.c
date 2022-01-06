@@ -1,7 +1,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "uuzSENSOR.h"
 /* ----------------------------------------------------------------*/
-void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t * sensor)
+void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t* sensor, u16 size)
 {
     u16 count = sensor->count;
 
@@ -16,7 +16,7 @@ void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t * sensor)
         sensor->low = (sensor->low > sensor->analysis) ? (sensor->analysis) : (sensor->low);
         sensor->high = (sensor->high < sensor->analysis) ? (sensor->analysis) : (sensor->high);
 
-        if (((sensor->high - sensor->low) > 22) || (sensor->ccount > 30)) {
+        if (((sensor->high - sensor->low) > size) || (sensor->ccount > 15)) {
             sensor->low = 0;
             sensor->high = 0;
             sensor->middle = 0;
@@ -32,7 +32,7 @@ void uuz_vSensorData_Anglysis(u16 data, Sensor_Typedef_t * sensor)
     sensor->count = count;
 }
 
-u16 uuz_vAdcVoltage_Get(const u16 * SensorData, s16 count)
+u16 uuz_vAdcVoltage_Get(const u16* SensorData, s16 count)
 {
     s16 i;
     u16 max, min;

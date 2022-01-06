@@ -4,4 +4,4 @@ clean2:
 	-@echo ' '
 
 
-*.elf: $(wildcard ../link.lds)
+*.elf: $(wildcard ../linkscripts/STM32F103RC/link.lds)

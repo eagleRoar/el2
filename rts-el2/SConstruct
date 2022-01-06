@@ -24,7 +24,7 @@ env = Environment(tools = ['mingw'],
     LINK = rtconfig.LINK, LINKFLAGS = rtconfig.LFLAGS)
 env.PrependENVPath('PATH', rtconfig.EXEC_PATH)
 
-env.AppendUnique(CPPDEFINES = ['STM32F105xC', 'USE_HAL_DRIVER'])
+env.AppendUnique(CPPDEFINES = [])
 
 Export('RTT_ROOT')
 Export('rtconfig')

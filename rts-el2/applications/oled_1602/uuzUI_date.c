@@ -1,5 +1,6 @@
 ﻿/* Includes ------------------------------------------------------------------*/
 #include <rtthread.h>
+#include <uuzUI.h>
 #include "string.h"
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
@@ -11,7 +12,6 @@
 #include "uuzRTC.h"
 #include "uuzCalendar.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
 #include "uuzOLED_1602.h"
 #include "uuzUI_1602.h"
@@ -33,7 +33,7 @@ Value_Typedef_t xTitle;         //foucs:3
 Value_Typedef_t xYear;          //foucs:4
 Value_Typedef_t xMonth;         //foucs:5
 Value_Typedef_t xDay;           //foucs:6
-extern struct rt_messagequeue mq;//Justin debug
+
 void time_init(void)
 {
     if (xInit._menu_time == 0) {
@@ -93,17 +93,8 @@ void time_init(void)
 
 void time_disp(void)
 {
-    u8 buffer = 0;
-    rt_err_t ret = RT_EOK;//Justin debug
     //初始化设置
     time_init();
-
-    ret = rt_mq_recv(&mq, &buffer, sizeof(buffer), RT_WAITING_FOREVER);//Justin debug
-    if(ret != RT_EOK)
-    {
-        LOG_E("receive messagequeue failed");
-    }
-
     if (xUI.cID != uuzUI_MENU_TIME) {
         ui_id_set(uuzUI_MENU_TIME, 7);
         //如果没有设置过日期
@@ -113,7 +104,7 @@ void time_disp(void)
             //24-HOUR
             xTime.val = _TYPE_24HOUR;
             xTime.cmd[0] = ' ';
-            xHour.val = buffer;//8;//Justin debug
+            xHour.val = 8;
             xMin.val = 0;
             //Date-Title
             xTitle.val = _TYPE_MMDDYY;

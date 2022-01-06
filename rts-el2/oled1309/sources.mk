@@ -19,9 +19,8 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-applications/light \
 applications \
-applications/oled_1602 \
+applications/oled_1309 \
 drivers \
 libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc \
 libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates \
@@ -31,8 +30,6 @@ packages/LedBlink-latest \
 packages/agile_button-latest/src \
 packages/u8g2-c-latest/port \
 packages/u8g2-c-latest/src \
-rt-thread/components/dfs/filesystems/devfs \
-rt-thread/components/dfs/src \
 rt-thread/components/drivers/misc \
 rt-thread/components/drivers/rtc \
 rt-thread/components/drivers/serial \

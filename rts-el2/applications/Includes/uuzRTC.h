@@ -22,6 +22,7 @@ extern struct tm rTm;
 void rtc_init(u16 year, u8 mon, u8 day, u8 hh, u8 mm, u8 ss);
 void uuz_vRTCDataGet(void);
 u16 uuz_usRTC_GetMinutes(void);
+u32 uuz_ulRTC_GetSeconds(void);
 void uuz_vRTC_Current(void);
 
 #ifdef __cplusplus

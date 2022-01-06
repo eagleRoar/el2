@@ -7,10 +7,10 @@
 //设备系统数据
 extern SysConfig_Typedef_t xSysConfig;
 //设备日志数据
-Logs_Typedef_t xLogs[__LOG_MAX ];
+Logs_Typedef_t xLogs[__LOG_MAX];
 //临时缓存数据
 extern DeviceCache_Typedef_t xCache;
-extern u16 xSta[__STA_MAX ];    //状态值
+extern u32 xSta[__STA_MAX]; //状态值
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +29,7 @@ void PVD_Config(void);
 u16 get_data(u8 addr, u8 num);
 void set_data(u8 addr, u8 num, u16 data);
 void save_data(void);
-void set_logs(u8 num, u8 * data, u8 len);
+void set_logs(u8 num, u8* data, u8 len);
 void save_logs(void);
 void pvd_sync_init(void);
 void pvd_data_update(void);

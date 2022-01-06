@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-  <name>rts-el2</name>
+  <name>rts-el2-103</name>
   <comment />
   <projects>
 	</projects>
@@ -24,6 +24,6 @@
     <nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
     <nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
   </natures>
-  <linkedResources>
-    </linkedResources>
+  <name>rts-el2-103</name>
+  <linkedResources />
 </projectDescription>

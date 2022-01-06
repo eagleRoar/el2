@@ -16,8 +16,6 @@ RM := rm -rf
 -include rt-thread/components/drivers/serial/subdir.mk
 -include rt-thread/components/drivers/rtc/subdir.mk
 -include rt-thread/components/drivers/misc/subdir.mk
--include rt-thread/components/dfs/src/subdir.mk
--include rt-thread/components/dfs/filesystems/devfs/subdir.mk
 -include packages/u8g2-c-latest/src/subdir.mk
 -include packages/u8g2-c-latest/port/subdir.mk
 -include packages/agile_button-latest/src/subdir.mk
@@ -27,8 +25,7 @@ RM := rm -rf
 -include libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/subdir.mk
 -include libraries/CMSIS/Device/ST/STM32F1xx/Source/Templates/subdir.mk
 -include drivers/subdir.mk
--include applications/oled_1602/subdir.mk
--include applications/light/subdir.mk
+-include applications/oled_1309/subdir.mk
 -include applications/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -63,7 +60,7 @@ all: rtthread.elf secondary-outputs
 
 # 工具调用
 rtthread.elf: $(OBJS) $(USER_OBJS)
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -T "D:\4.Workspace\rts-el2\link.lds" -Xlinker --gc-sections -Wl,-Map,"rtthread.map" -Xlinker --cref -o "rtthread.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -ffunction-sections -fdata-sections -Wall  -g -gdwarf-2 -T "D:\SynologyDrive\A26-EL2-PRO\PRO\rts-el2-103\linkscripts\STM32F103RC\link.lds" -Xlinker --gc-sections -Wl,-Map,"rtthread.map" -Xlinker --cref -o "rtthread.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 
 rtthread.bin: rtthread.elf
 	arm-none-eabi-objcopy -O binary "rtthread.elf"  "rtthread.bin"

@@ -20,8 +20,6 @@
 #define RT_TIMER_THREAD_STACK_SIZE 512
 #define RT_DEBUG
 #define RT_DEBUG_COLOR
-#define RT_DEBUG_INIT_CONFIG
-#define RT_DEBUG_INIT 1
 
 /* Inter-Thread communication */
 
@@ -70,12 +68,6 @@
 
 /* Device virtual file system */
 
-#define RT_USING_DFS
-#define DFS_USING_WORKDIR
-#define DFS_FILESYSTEMS_MAX 2
-#define DFS_FILESYSTEM_TYPES_MAX 2
-#define DFS_FD_MAX 16
-#define RT_USING_DFS_DEVFS
 /* end of Device virtual file system */
 
 /* Device Drivers */
@@ -202,8 +194,6 @@
 /* samples: kernel and components samples */
 
 /* end of samples: kernel and components samples */
-#define SOC_FAMILY_STM32
-#define SOC_SERIES_STM32F1
-#define SOC_STM32F105RBTX
+#define RT_STUDIO_BUILT_IN
 
 #endif

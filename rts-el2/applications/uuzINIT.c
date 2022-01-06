@@ -1,14 +1,15 @@
 /******************************************************************************/
-#include <rtthread.h>
 #include "drv_flash.h"
+#include <rtthread.h>
 #include <string.h>
 /******************************************************************************/
-#include <uuzINIT.h>
+#include "typedefINIT.h"
+#include "uuzConfigLIGHT.h"
 #include "uuzGPIO.h"
 #include "uuzOpt.h"
-#include "typedefINIT.h"
-#include "uuzTEMP.h"
 #include "uuzRTC.h"
+#include "uuzTEMP.h"
+#include <uuzINIT.h>
 /******************************************************************************/
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "INIT"
@@ -20,7 +21,7 @@ static rt_mutex_t flash_mutex = RT_NULL;
 SysConfig_Typedef_t xSysConfig;
 Logs_Typedef_t xLogs[__LOG_MAX ];
 DeviceCache_Typedef_t xCache;
-u16 xSta[__STA_MAX ];    //状态值
+u32 xSta[__STA_MAX ];  //状态值
 /******************************************************************************/
 /**
  * @brief uuz_vLocalInit
@@ -79,6 +80,10 @@ void uuz_vDeviceConfigInit(u8 ucMask)
         //读取成功
         //读取系统配置数据
         xSysConfig.Sys[_D_BOOT_COUNT]++;
+        xSysConfig.Sys[_D_SW_VERSION] = 10003;  //V1.00.03
+        xSysConfig.Sys[_D_HW_VERSION] = 499;  //V4.97:V1.00.02
+                                              //V4.98:V1.00.03
+                                              //V4.99:V1.00.04  //修改灯光逻辑
     }
 
     LOG_I("Read configuration is Success [%d].", xSysConfig.Sys[_D_BOOT_COUNT]);
@@ -102,55 +107,57 @@ void uuz_vDeviceConfigDefaultInit(void)
     //设备系统日志信息
     xSysConfig.Sys[_D_INIT_STATE] = 0x00U; /* 0 - Time Set isn't Inited; 1 - Time Set is Inited */
     xSysConfig.Sys[_D_BOOT_COUNT] = 0x01U;
-    xSysConfig.Sys[_D_SW_VERSION] = 10000U;      //V1.00.00
-    xSysConfig.Sys[_D_HW_VERSION] = 495U;        //V4.95
+    xSysConfig.Sys[_D_SW_VERSION] = 10000U;  //V1.00.00
+    xSysConfig.Sys[_D_HW_VERSION] = 495U;  //V4.95
     xSysConfig.Sys[_D_DEVICE_TYPE] = uuzCONFIG_DEVICE_TYPE;
-    xSysConfig.Sys[_D_PLC_STATION] = 0xF7U;      //默认设置值:0xF7U
-    xSysConfig.Sys[_D_DATE_FORMAT] = 0x00U;       //默认设置值:01-MM/DD/YY
-    xSysConfig.Sys[_D_TIME_FORMAT] = _TYPE_24HOUR;      //默认设置值:24HOUR
-    xSysConfig.Sys[_D_LANGUAGE] = 0x00U;         //默认设置值:0:English
+    xSysConfig.Sys[_D_PLC_STATION] = 0xF7U;  //默认设置值:0xF7U
+    xSysConfig.Sys[_D_DATE_FORMAT] = 0x00U;  //默认设置值:01-MM/DD/YY
+    xSysConfig.Sys[_D_TIME_FORMAT] = _TYPE_24HOUR;  //默认设置值:24HOUR
+    xSysConfig.Sys[_D_LANGUAGE] = 0x00U;  //默认设置值:0:English
     //设备从机信息
-    xSysConfig.Sys[_D_IS_CONNECTED] = 0x00;       //连接状态
-    xSysConfig.Sys[_D_SLAVE_STATION] = 0x01;        //从机设备Modbus ID
-    xSysConfig.Sys[_D_SLAVE_TYPE] = 0x01;        //从机设备类型
+    xSysConfig.Sys[_D_IS_CONNECTED] = 0x00;  //连接状态
+    xSysConfig.Sys[_D_SLAVE_STATION] = 0x01;  //从机设备Modbus ID
+    xSysConfig.Sys[_D_SLAVE_TYPE] = 0x01;  //从机设备类型
     //设备的灯光部分的相关设置
-    xSysConfig.Light[_L_TEMP_UNITS] = _TYPE_C;         //0:C摄氏度
+    xSysConfig.Light[_L_TEMP_UNITS] = _TYPE_C;  //0:C摄氏度
     //Channel-1
-    xSysConfig.Light[_L_CH1_OUTPUT_MODE] = 0x00U;    //0:OFF MODE
-    xSysConfig.Light[_L_CH1_CYCLE_ON] = 0U;        //480=8:00
-    xSysConfig.Light[_L_CH1_CYCLE_OFF] = 720U;       //960=18:00
-    xSysConfig.Light[_L_CH1_OUTPUT_LEVEL] = 100U;    //100%
-    xSysConfig.Light[_L_CH1_DISPLAY_MODE] = 0x00U;    //0:%;1:1000W;2:750W;3:600W;4:400W
-    xSysConfig.Light[_L_CH1_SUNRISE_DELAY] = 0x0FU;    //0:NONE(0~30)min
-    xSysConfig.Light[_L_CH1_SUNSET_DELAY] = 0x0FU;    //0:NONE(0~30)min
-    xSysConfig.Light[_L_CH1_ECM_MODE] = 0x00U;       //0:Day Mode
+    xSysConfig.Light[_L_CH1_OUTPUT_MODE] = 0x00U;  //0:OFF MODE
+    xSysConfig.Light[_L_CH1_CYCLE_ON] = 0U;  //480=8:00
+    xSysConfig.Light[_L_CH1_CYCLE_OFF] = 720U;  //960=18:00
+    xSysConfig.Light[_L_CH1_OUTPUT_LEVEL] = 100U;  //100%
+    xSysConfig.Light[_L_CH1_DISPLAY_MODE] = 0x00U;  //0:%;1:1000W;2:750W;3:600W;4:400W
+    xSysConfig.Light[_L_CH1_SUNRISE_DELAY] = 0x0FU;  //0:NONE(0~30)min
+    xSysConfig.Light[_L_CH1_SUNSET_DELAY] = 0x0FU;  //0:NONE(0~30)min
+    xSysConfig.Light[_L_CH1_ECM_MODE] = 0x00U;  //0:Day Mode
     //Light Config for Temperature
-    xSysConfig.Light[_L_CH1_NIGHT_ALARM_TEMP] = 275U;    //300=30.0C
-    xSysConfig.Light[_L_CH1_DAY_ALARM_TEMP] = 275U;    //350=35.0C
-    xSysConfig.Light[_L_CH1_AUTO_DIM_TEMP] = 300U;    //300=30.0C
-    xSysConfig.Light[_L_CH1_SHUTDOWN_TEMP] = 350U;    //350=35.0C
-    xSysConfig.Light[_L_CH1_TEMP_HIGH] = _TEMP_NULL;    //_TEMP_NULL=255.0C表示N/A
-    xSysConfig.Light[_L_CH1_TEMP_LOW] = _TEMP_NULL;    //_TEMP_NULL=255.0C表示N/A
+    xSysConfig.Light[_L_CH1_NIGHT_ALARM_TEMP] = 275U;  //300=30.0C
+    xSysConfig.Light[_L_CH1_DAY_ALARM_TEMP] = 275U;  //350=35.0C
+    xSysConfig.Light[_L_CH1_AUTO_DIM_TEMP] = 300U;  //300=30.0C
+    xSysConfig.Light[_L_CH1_SHUTDOWN_TEMP] = 350U;  //350=35.0C
+    xSysConfig.Light[_L_CH1_TEMP_HIGH] = _TEMP_NULL;  //_TEMP_NULL=255.0C表示N/A
+    xSysConfig.Light[_L_CH1_TEMP_LOW] = _TEMP_NULL;  //_TEMP_NULL=255.0C表示N/A
     //Channel-2
-    xSysConfig.Light[_L_CH2_OUTPUT_MODE] = 0x00U;    //0:FOLLOW MAIN
-    xSysConfig.Light[_L_CH2_CYCLE_ON] = 0U;        //480=8:00
-    xSysConfig.Light[_L_CH2_CYCLE_OFF] = 720U;       //960=18:00
-    xSysConfig.Light[_L_CH2_OUTPUT_LEVEL] = 100U;    //100%
-    xSysConfig.Light[_L_CH2_DISPLAY_MODE] = 0x00U;    //0:%;1:1000W;2:750W;3:600W;4:400W
-    xSysConfig.Light[_L_CH2_SUNRISE_DELAY] = 0x0FU;    //0:NONE(0~30)min
-    xSysConfig.Light[_L_CH2_SUNSET_DELAY] = 0x0FU;    //0:NONE(0~30)min
-    xSysConfig.Light[_L_CH2_ECM_MODE] = 0x00U;       //0:Day Mode
+    xSysConfig.Light[_L_CH2_OUTPUT_MODE] = 0x00U;  //0:FOLLOW MAIN
+    xSysConfig.Light[_L_CH2_CYCLE_ON] = 0U;  //480=8:00
+    xSysConfig.Light[_L_CH2_CYCLE_OFF] = 720U;  //960=18:00
+    xSysConfig.Light[_L_CH2_OUTPUT_LEVEL] = 100U;  //100%
+    xSysConfig.Light[_L_CH2_DISPLAY_MODE] = 0x00U;  //0:%;1:1000W;2:750W;3:600W;4:400W
+    xSysConfig.Light[_L_CH2_SUNRISE_DELAY] = 0x0FU;  //0:NONE(0~30)min
+    xSysConfig.Light[_L_CH2_SUNSET_DELAY] = 0x0FU;  //0:NONE(0~30)min
+    xSysConfig.Light[_L_CH2_ECM_MODE] = 0x00U;  //0:Day Mode
     //Light Config for Temperature
-    xSysConfig.Light[_L_CH2_NIGHT_ALARM_TEMP] = 275U;    //300=30.0C
-    xSysConfig.Light[_L_CH2_DAY_ALARM_TEMP] = 275U;    //350=35.0C
-    xSysConfig.Light[_L_CH2_AUTO_DIM_TEMP] = 300U;    //300=30.0C
-    xSysConfig.Light[_L_CH2_SHUTDOWN_TEMP] = 350U;    //350=35.0C
-    xSysConfig.Light[_L_CH2_TEMP_HIGH] = _TEMP_NULL;    //_TEMP_NULL=255.0C表示N/A
-    xSysConfig.Light[_L_CH2_TEMP_LOW] = _TEMP_NULL;    //_TEMP_NULL=255.0C表示N/A
-    xSysConfig.Light[_L_CAL_VAL1] = 127U;            //大于127为正,小于127为负，默认为127，1为0.1C(0~256：表示-12.7C～12.8)
-    xSysConfig.Light[_L_CAL_VAL2] = 127U;            //大于127为正,小于127为负，默认为127，1为0.1C(0~256：表示-12.7C～12.8)
+    xSysConfig.Light[_L_CH2_NIGHT_ALARM_TEMP] = 275U;  //300=30.0C
+    xSysConfig.Light[_L_CH2_DAY_ALARM_TEMP] = 275U;  //350=35.0C
+    xSysConfig.Light[_L_CH2_AUTO_DIM_TEMP] = 300U;  //300=30.0C
+    xSysConfig.Light[_L_CH2_SHUTDOWN_TEMP] = 350U;  //350=35.0C
+    xSysConfig.Light[_L_CH2_TEMP_HIGH] = _TEMP_NULL;  //_TEMP_NULL=255.0C表示N/A
+    xSysConfig.Light[_L_CH2_TEMP_LOW] = _TEMP_NULL;  //_TEMP_NULL=255.0C表示N/A
+    xSysConfig.Light[_L_CAL_VAL1] = 127U;  //大于127为正,小于127为负，默认为127，1为0.1C(0~256：表示-12.7C～12.8)
+    xSysConfig.Light[_L_CAL_VAL2] = 127U;  //大于127为正,小于127为负，默认为127，1为0.1C(0~256：表示-12.7C～12.8)
     //灯光频道
-    xSysConfig.Light[_L_CH2_MODE] = 0x00U;           //0:FOLLOW模式;;1:INDEPENDENT; 2:INVERSE;
+    xSysConfig.Light[_L_CH2_MODE] = 0x00U;  //0:FOLLOW模式;;1:INDEPENDENT; 2:INVERSE;
+    //启动最低电压值
+    xSysConfig.Light[_L_MIN_LEVEL] = uuzLIGHT_VAL_MIN;  //10--30:1.0V--3.0V
     //添加结束默认值
     xSysConfig.end = 0xBCDEU;
     //初始化日志信息
@@ -163,9 +170,9 @@ void uuz_vDeviceConfigDefaultInit(void)
 void uuz_vDeviceCacheDefaultInit(void)
 {
     //初始化缓存数据
-    rt_memset(&xCache, 0x00, sizeof(DeviceCache_Typedef_t));
-    //初始化缓存数据
     rt_memset(xSta, 0x00, __STA_MAX);
+    //初始化缓存数据
+    rt_memset(&xCache, 0x00, sizeof(DeviceCache_Typedef_t));
     //临时编号
     xSta[_S_DEVICE_ID1] = 0x1BBC;
     xSta[_S_DEVICE_ID2] = 0xCE04;
@@ -240,20 +247,20 @@ void set_data(u8 type, u8 num, u16 data)
  * @param data
  * @param len
  */
-void set_logs(u8 num, u8 * data, u8 len)
+void set_logs(u8 num, u8* data, u8 len)
 {
     //Logs Data
     if (num < __LOG_MAX) {
         //保存日志时间记录
         xLogs[num].en = 0x01U;
         //日期
-        xLogs[num].date[0] = rTm.tm_year + 1900;               //Year
-        xLogs[num].date[1] = rTm.tm_mon + 1;                //Month
-        xLogs[num].date[2] = rTm.tm_mday;               //Day
+        xLogs[num].date[0] = rTm.tm_year + 1900;  //Year
+        xLogs[num].date[1] = rTm.tm_mon + 1;  //Month
+        xLogs[num].date[2] = rTm.tm_mday;  //Day
         //时间
-        xLogs[num].time[0] = rTm.tm_hour;               //Hour
-        xLogs[num].time[1] = rTm.tm_min;                //Min
-        xLogs[num].time[2] = 0x00U;                     //Second
+        xLogs[num].time[0] = rTm.tm_hour;  //Hour
+        xLogs[num].time[1] = rTm.tm_min;  //Min
+        xLogs[num].time[2] = 0x00U;  //Second
 
         //保存相关数据
         if (data != NULL) {

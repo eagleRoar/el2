@@ -1,5 +1,6 @@
 ﻿/* Includes ------------------------------------------------------------------*/
 #include <rtthread.h>
+#include <uuzUI.h>
 #include "string.h"
 /* ------------------------- package ----------------------------------------*/
 #include "drv_flash.h"
@@ -14,7 +15,6 @@
 #include "uuzRTC.h"
 #include "uuzLED.h"
 /* -------------------------------------------------------------------------------*/
-#include "uuzUI.h"
 #include "typedefUI.h"
 #include "uuzOLED_1602.h"
 #include "uuzUI_1602.h"
@@ -22,7 +22,6 @@
 #include "uuzUI_Cache.h"
 #include "uuzConfigLIGHT.h"
 #include "uuzLIGHT.h"
-#include "typedefLIGHT.h"
 /* -------------------------------------------------------------------------------*/
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "1602"

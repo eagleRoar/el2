@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 void oled_init(void);
-
+void oled_reset(void);
 #ifdef __cplusplus
 }
 #endif

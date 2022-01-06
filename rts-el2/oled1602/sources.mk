@@ -29,8 +29,6 @@ libraries/STM32F1xx_HAL_Driver/Src/Legacy \
 libraries/STM32F1xx_HAL_Driver/Src \
 packages/LedBlink-latest \
 packages/agile_button-latest/src \
-rt-thread/components/dfs/filesystems/devfs \
-rt-thread/components/dfs/src \
 rt-thread/components/drivers/misc \
 rt-thread/components/drivers/rtc \
 rt-thread/components/drivers/serial \
