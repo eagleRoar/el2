@@ -172,9 +172,6 @@ void clear_screen(u8 screen)
     rt_uint8_t ucIndex = 0;
     rt_uint8_t addr = 0;
 
-    /*为了修复黑屏，重启屏幕*/
-    oled_reset();
-
     //清屏
     if (screen == _SYNC_A) {
         while (isbusy() == 1)

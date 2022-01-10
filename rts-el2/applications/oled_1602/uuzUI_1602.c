@@ -22,6 +22,7 @@
 #include "uuzUI_Cache.h"
 #include "uuzConfigLIGHT.h"
 #include "uuzLIGHT.h"
+#include "uuzOLED.h"
 /* -------------------------------------------------------------------------------*/
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "1602"
@@ -200,12 +201,22 @@ void btn_long_event(void)
  */
 void ui_thread_entry(void* parameter)
 {
+    static u8 resetCnt = 0;
+
     //显示启动LOGO界面
     xUI.cID = uuzUI_NULL;
     //初始化界面标记
     show_ui(uuzUI_LOGO);
 
     while (1) {
+
+        /*为了修复黑屏问题，重启屏幕*/
+        if(resetCnt++ >= 4)
+        {
+            oled_reset();
+            resetCnt = 0;
+        }
+
         xUI.delay++;
         if ((xUI.delay % (_UI_AUTO_BACK_SEC * _UI_DELAY_SEC)) == 0) {
             if ((xUI.cID == uuzUI_MENU_TIME) && (xSysConfig.Sys[_D_INIT_STATE] == 0)) {
